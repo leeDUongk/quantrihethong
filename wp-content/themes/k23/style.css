@@ -1,0 +1,77 @@
+/*
+Theme Name: K23
+Theme URI: https://github.com/leeDUongk/quantrihethong
+Author: Lop K23 - SDM332
+Description: Theme minh hoa vong doi trien khai: sua code tren may that -> GitHub -> may chu -> website doi.
+Version: 1.0.0
+License: GPLv2 or later
+Text Domain: k23
+*/
+
+:root {
+  --mau-chinh: #1F4E79;
+  --mau-phu:   #C0392B;
+  --nen:       #f6f8fb;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--nen);
+  color: #222;
+  line-height: 1.6;
+}
+
+.bang-phien-ban {
+  background: var(--mau-chinh);
+  color: #fff;
+  padding: 10px 20px;
+  font-family: "Consolas", "DejaVu Sans Mono", monospace;
+  font-size: 14px;
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.bang-phien-ban b { color: #ffd479; }
+
+header.k23-header {
+  background: #fff;
+  border-bottom: 3px solid var(--mau-chinh);
+  padding: 26px 20px;
+}
+header.k23-header h1 { margin: 0; font-size: 30px; color: var(--mau-chinh); }
+header.k23-header p  { margin: 6px 0 0; color: #666; }
+
+main { max-width: 960px; margin: 0 auto; padding: 26px 20px 60px; }
+
+.the-bai {
+  background: #fff;
+  border: 1px solid #e2e6ea;
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.the-bai h2 { margin: 0 0 6px; font-size: 21px; }
+.the-bai h2 a { color: var(--mau-chinh); text-decoration: none; }
+.the-bai .ngay { color: #888; font-size: 13px; }
+
+.hop-demo {
+  background: #fff4e8;
+  border-left: 5px solid var(--mau-phu);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 22px;
+}
+.hop-demo h3 { margin: 0 0 8px; color: var(--mau-phu); }
+
+footer.k23-footer {
+  background: #22303f;
+  color: #cfd8e3;
+  text-align: center;
+  padding: 22px;
+  font-size: 14px;
+}

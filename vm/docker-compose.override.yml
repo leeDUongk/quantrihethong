@@ -1,0 +1,12 @@
+# Đặt file này cùng thư mục với docker-compose.yml của Bài lab 3 (wordpress-lab).
+# Docker Compose tự động nạp file tên docker-compose.override.yml, không cần cờ -f.
+#
+# Tác dụng: gắn thư mục theme K23 lấy từ GitHub vào bên trong container WordPress.
+# Từ đó, sửa file trên máy thật -> git pull trên máy ảo -> tải lại trang là thấy đổi,
+# KHÔNG cần build lại image, KHÔNG cần restart container.
+
+services:
+  wordpress:
+    volumes:
+      - wp_data:/var/www/html
+      - ${HOME}/quantrihethong/wp-content/themes/k23:/var/www/html/wp-content/themes/k23:ro

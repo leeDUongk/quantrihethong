@@ -1,0 +1,17 @@
+# Rác của hệ điều hành
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Nhật ký và file tạm
+*.log
+*~
+*.tmp
+
+# Gói nén — mã nguồn đã có trong repo, không cần đóng gói lại
+*.zip
+*.rar
+*.7z
+
+# Cấu hình riêng của máy, không đưa lên chung
+.env
