@@ -6,7 +6,8 @@
 # Dùng:             ~/capnhat.sh
 set -e
 
-REPO=~/quantrihethong
+# Sửa cho khớp tên thư mục repo của mình
+REPO=~/quantrihethong-<MSSV>
 
 echo "==> Kéo mã nguồn mới nhất"
 cd "$REPO"

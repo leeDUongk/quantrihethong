@@ -39,32 +39,25 @@ quantrihethong/
 
 ### A. Trên máy Windows
 
-Thư mục làm việc: **`D:\Claude\Projects\ICTU\quantrihethong\projectTest`**
+Thư mục làm việc gợi ý: **`D:\hoc-tap\quantrihethong-<MSSV>`**
 
-1. Mở **GitHub Desktop** → *File → Clone repository* → thẻ **URL** → dán
-   `https://github.com/leeDUongk/quantrihethong.git`
-2. Ô *Local path* điền `D:\Claude\Projects\ICTU\quantrihethong\projectTest` → **Clone**
-3. Giải nén gói này vào chính thư mục đó, sao cho `wp-content\` và `vm\` nằm **ngay trong**
-   `projectTest\`, không lồng thêm một cấp nữa
+1. Mở **GitHub Desktop** → *File → Clone repository* → thẻ **URL** → dán đường dẫn repo
+   **của chính mình**: `https://github.com/<tài-khoản-github>/quantrihethong-<MSSV>.git`
+2. Ô *Local path* gõ đầy đủ `D:\hoc-tap\quantrihethong-<MSSV>` → **Clone**
+3. Chép nội dung gói này vào chính thư mục đó, sao cho `wp-content\` và `vm\` nằm **ngay trong**
+   thư mục repo, không lồng thêm một cấp nữa
 4. GitHub Desktop hiện danh sách file mới → điền *Summary* → **Commit to main** → **Push origin**
 
-> **Lưu ý về repo lồng nhau.** Thư mục cha `D:\Claude\Projects\ICTU\quantrihethong` đã là một
-> repo Git riêng. Khi `projectTest` trở thành repo thứ hai nằm bên trong, Git của repo cha sẽ báo
-> *embedded repository*. Xử lý bằng cách thêm một dòng vào `.gitignore` của repo cha:
->
-> ```
-> projectTest/
-> ```
->
-> Hai repo từ đó độc lập hẳn: repo cha giữ tài liệu học phần, `projectTest` giữ mã nguồn theme
-> đồng bộ với GitHub.
+> **Nếu thư mục repo nằm bên trong một repo Git khác**, Git của repo cha sẽ báo *embedded
+> repository*. Xử lý bằng cách thêm tên thư mục đó vào `.gitignore` của repo cha. Cách gọn hơn:
+> đặt thư mục dự án ở một nhánh cây thư mục riêng, không lồng vào repo nào khác.
 
 ### B. Trên máy ảo Ubuntu
 
 ```bash
 cd ~
-git clone https://github.com/leeDUongk/quantrihethong.git
-bash ~/quantrihethong/vm/cai-dat-lan-dau.sh
+git clone https://github.com/<tài-khoản-github>/quantrihethong-<MSSV>.git
+bash ~/quantrihethong-<MSSV>/vm/cai-dat-lan-dau.sh
 ```
 
 Script làm bốn việc: kéo repo về, đặt file `docker-compose.override.yml` vào `~/bai3/wordpress-lab/`,
@@ -105,7 +98,7 @@ Mỗi vòng mất khoảng một phút.
 `docker-compose.override.yml` gắn thư mục theme theo kiểu **bind mount**:
 
 ```yaml
-- ${HOME}/quantrihethong/wp-content/themes/k23:/var/www/html/wp-content/themes/k23:ro
+- ${HOME}/<thư-mục-repo>/wp-content/themes/k23:/var/www/html/wp-content/themes/k23:ro
 ```
 
 Thư mục trên máy ảo và thư mục trong container là **cùng một chỗ trên đĩa**. PHP là ngôn ngữ

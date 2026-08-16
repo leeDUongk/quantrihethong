@@ -2,19 +2,22 @@
 # Chạy MỘT LẦN trên máy ảo Ubuntu để nối máy ảo với repo GitHub.
 set -e
 
-REPO_URL=https://github.com/leeDUongk/quantrihethong.git
+# Sửa hai dòng dưới cho khớp tài khoản và mã số của mình, hoặc truyền qua tham số:
+#   bash cai-dat-lan-dau.sh https://github.com/<tai-khoan>/quantrihethong-<MSSV>.git
+REPO_URL=${1:-https://github.com/<tai-khoan-github>/quantrihethong-<MSSV>.git}
+REPO_DIR=$(basename "$REPO_URL" .git)
 WP_DIR=~/bai3/wordpress-lab
 
 echo "==> 1. Kéo repo GitHub về thư mục nhà"
 cd ~
-[ -d ~/quantrihethong ] || git clone "$REPO_URL" quantrihethong
-cd ~/quantrihethong && git pull --ff-only
+[ -d ~/"$REPO_DIR" ] || git clone "$REPO_URL"
+cd ~/"$REPO_DIR" && git pull --ff-only
 
 echo "==> 2. Đặt file override vào thư mục wordpress-lab"
-cp ~/quantrihethong/vm/docker-compose.override.yml "$WP_DIR/"
+cp ~/"$REPO_DIR"/vm/docker-compose.override.yml "$WP_DIR/"
 
 echo "==> 3. Đặt script cập nhật vào thư mục nhà"
-cp ~/quantrihethong/vm/capnhat.sh ~/capnhat.sh
+cp ~/"$REPO_DIR"/vm/capnhat.sh ~/capnhat.sh
 chmod +x ~/capnhat.sh
 
 echo "==> 4. Dựng lại stack WordPress kèm theme gắn từ GitHub"

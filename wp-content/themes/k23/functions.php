@@ -6,8 +6,9 @@
  */
 
 define('K23_VERSION',  '1.0.0');
-define('K23_LAN_SUA',  'Ban goc — chua sua gi');
-define('K23_MAU_NEN',  '#1F4E79');
+define('K23_LAN_SUA',  'Sua lan 1 - doi mau chu dao');
+define('K23_MAU_NEN',  '#C0392B');
+define('K23_REPO',     'github.com/<tai-khoan-github>/quantrihethong-<MSSV>');
 
 function k23_setup() {
     add_theme_support('title-tag');
