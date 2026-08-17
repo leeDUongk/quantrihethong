@@ -24,6 +24,19 @@ function k23_assets() {
 }
 add_action('wp_enqueue_scripts', 'k23_assets');
 
+/**
+ * Tìm trang đang dùng mẫu "Portfolio DevOps".
+ * Trả về đường dẫn nếu có, chuỗi rỗng nếu chưa tạo trang nào.
+ */
+function k23_link_portfolio() {
+    $tim = get_pages([
+        'meta_key'   => '_wp_page_template',
+        'meta_value' => 'page-portfolio.php',
+        'number'     => 1,
+    ]);
+    return $tim ? get_permalink($tim[0]->ID) : '';
+}
+
 /** Bảng thông tin phiên bản hiển thị trên đầu mọi trang — trái tim của bài demo. */
 function k23_bang_phien_ban() {
     $commit = trim(@file_get_contents(get_template_directory() . '/COMMIT.txt'));

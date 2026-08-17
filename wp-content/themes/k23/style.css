@@ -75,3 +75,43 @@ footer.k23-footer {
   padding: 22px;
   font-size: 14px;
 }
+
+/* ---------- Hộp dẫn sang trang Portfolio ---------- */
+.hop-portfolio {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: linear-gradient(135deg, #0d1c2d 0%, #122131 100%);
+  border: 1px solid #3c4a42;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 22px;
+}
+.hop-portfolio h3 { margin: 0 0 6px; color: #4edea3; font-size: 19px; }
+.hop-portfolio p  { margin: 0; color: #bbcabf; font-size: 14px; max-width: 520px; }
+
+.nut-portfolio {
+  display: inline-block;
+  background: #4edea3;
+  color: #051424;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  padding: 11px 22px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 0 15px rgba(78, 222, 163, .3);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.nut-portfolio:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(78, 222, 163, .5); }
+.nut-tat {
+  background: #e8e8e8;
+  color: #777;
+  box-shadow: none;
+  font-weight: 400;
+  font-size: 13px;
+  cursor: default;
+}
+.nut-tat:hover { transform: none; box-shadow: none; }

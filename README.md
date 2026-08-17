@@ -72,6 +72,28 @@ tên máy chủ và giờ tải trang.
 
 ---
 
+## Trang Portfolio — giao diện riêng, không đụng trang chủ
+
+Theme có sẵn file `page-portfolio.php` khai báo một **mẫu trang (Page Template)** tên
+*Portfolio DevOps*. File này tự dựng trọn bộ HTML của nó, **không dùng** `header.php` và
+`footer.php`, nên sửa hay xóa cũng không ảnh hưởng gì tới trang chủ.
+
+Bật trang này bằng ba thao tác trong trang quản trị, làm một lần:
+
+1. **Trang → Thêm trang mới**
+2. Tiêu đề: `Portfolio` — bên phải, mục **Trang** → **Mẫu** → chọn **Portfolio DevOps**
+3. Bấm **Đăng**
+
+Xong thì có ngay đường dẫn riêng, ví dụ `http://localhost:8081/portfolio/`, và **trang chủ tự
+hiện một nút** dẫn sang đó. Nút do hàm `k23_link_portfolio()` trong `functions.php` sinh ra: nó
+dò trang nào đang dùng mẫu này rồi lấy đường dẫn. Chưa tạo trang thì nút hiện dạng mờ kèm lời
+nhắc, không bao giờ dẫn tới liên kết hỏng.
+
+Khối terminal ở đầu trang Portfolio hiển thị **đúng mã commit** đọc từ `COMMIT.txt`, giống dải
+phiên bản ở trang chủ — nên cả hai trang đều dùng được để minh họa vòng lặp triển khai.
+
+---
+
 ## Vòng lặp demo trước lớp
 
 Mỗi vòng mất khoảng một phút.
