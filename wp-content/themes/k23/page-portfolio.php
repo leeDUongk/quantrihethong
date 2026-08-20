@@ -21,6 +21,9 @@ if ($k23_commit === '') {
 $k23_ver  = defined('K23_VERSION') ? K23_VERSION : '1.0';
 $k23_repo = defined('K23_REPO') ? K23_REPO : 'github.com/<tai-khoan-github>/quantrihethong-<MSSV>';
 
+// Loi chao: sua trong functions.php (hang so K23_LOI_CHAO) roi push -> pull -> tai lai trang
+$k23_loi_chao = defined('K23_LOI_CHAO') ? K23_LOI_CHAO : 'Xin chao K23K!';
+
 /* ---- Noi dung dang du lieu, de sua ma khong dung vao phan giao dien ---- */
 
 $k23_cong_cu = array(
@@ -55,6 +58,7 @@ $k23_cong_cu = array(
 );
 
 $k23_terminal = array(
+    array('lenh' => 'echo $K23_LOI_CHAO', 'ket_qua' => esc_html($k23_loi_chao)),
     array('lenh' => 'whoami',          'ket_qua' => 'Sinh vien Khoi nghiep &amp; DevOps Engineer'),
     array('lenh' => 'cat su_menh.txt', 'ket_qua' => 'Tu dong hoa, Toi uu hoa, Trien khai.'),
     array('lenh' => 'git log -1 --oneline', 'ket_qua' => esc_html($k23_commit)),
@@ -194,6 +198,14 @@ body.admin-bar header.k23-nav { top: 32px; }
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded bg-surface-container-high border border-outline-variant mb-6">
           <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
           <span class="font-code-sm text-label-caps text-on-surface-variant">HE THONG TRUC TUYEN &mdash; <?php echo esc_html(gethostname()); ?></span>
+        </div>
+
+        <!-- Loi chao K23K - don bay demo de nhin thay nhat -->
+        <div class="k23-loi-chao mb-6 px-5 py-4 rounded-xl border border-primary/40 bg-primary/10">
+          <div class="font-code-sm text-label-caps text-on-surface-variant mb-1">// LOI CHAO</div>
+          <div class="font-code-sm text-2xl md:text-3xl font-bold text-primary tracking-tight">
+            <?php echo esc_html($k23_loi_chao); ?><span class="cursor-blink">_</span>
+          </div>
         </div>
 
         <h1 class="font-display-lg-mobile md:font-display-lg text-on-surface mb-6">

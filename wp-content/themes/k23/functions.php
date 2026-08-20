@@ -10,6 +10,10 @@ define('K23_LAN_SUA',  'Sua lan 1 - doi mau chu dao');
 define('K23_MAU_NEN',  '#C0392B');
 define('K23_REPO',     'github.com/<tai-khoan-github>/quantrihethong-<MSSV>');
 
+// Lời chào hiển thị trên trang Portfolio DevOps.
+// Đây là hằng số dễ sửa nhất để minh họa chuỗi: sửa ở đây -> push -> pull -> tải lại trang.
+define('K23_LOI_CHAO', 'Xin chào K23K!');
+
 function k23_setup() {
     add_theme_support('title-tag');
     add_theme_support('post-thumbnails');
