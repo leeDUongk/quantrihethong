@@ -2,384 +2,363 @@
 /**
  * Template Name: Portfolio DevOps
  *
- * Trang giao diện độc lập. KHÔNG dùng header.php và footer.php của theme,
- * nên không ảnh hưởng gì tới trang chủ và danh sách bài viết đang chạy.
- * Muốn gỡ bỏ: xóa file này, hoặc đổi Mẫu của trang về "Mặc định".
+ * Trang giao dien doc lap. KHONG dung header.php va footer.php cua theme,
+ * de giao dien nay khong anh huong toi trang chu.
+ *
+ * Cac "don bay demo" duoc giu nguyen:
+ *   - K23_VERSION      (khai bao trong functions.php)
+ *   - COMMIT.txt       (do vm/capnhat.sh ghi ra sau moi lan git pull)
+ *   - gethostname()    (chung minh trang dang chay tren may ao)
+ *   - thoi gian tai    (do bang timer cua WordPress)
  */
 
-// Mã commit do capnhat.sh ghi vào — hiển thị ở chân trang để kiểm chứng phiên bản
+$k23_bat_dau = microtime(true);
+
 $k23_commit = trim(@file_get_contents(get_template_directory() . '/COMMIT.txt'));
-if ($k23_commit === '') { $k23_commit = 'chua co commit'; }
-$k23_ver = defined('K23_VERSION') ? K23_VERSION : '1.0';
+if ($k23_commit === '') {
+    $k23_commit = 'chua co commit';
+}
+$k23_ver  = defined('K23_VERSION') ? K23_VERSION : '1.0';
+$k23_repo = defined('K23_REPO') ? K23_REPO : 'github.com/<tai-khoan-github>/quantrihethong-<MSSV>';
+
+/* ---- Noi dung dang du lieu, de sua ma khong dung vao phan giao dien ---- */
+
+$k23_cong_cu = array(
+    array(
+        'ten'   => 'Git',
+        'icon'  => 'account_tree',
+        'mau'   => '#F05032',
+        'rgb'   => '240,80,50',
+        'mo_ta' => 'Kiem soat phien ban phan tan, quan ly ma nguon linh hoat.',
+    ),
+    array(
+        'ten'   => 'GitHub',
+        'icon'  => 'code',
+        'mau'   => '#ffffff',
+        'rgb'   => '255,255,255',
+        'mo_ta' => 'Luu tru ma nguon, hop tac phat trien va GitHub Actions.',
+    ),
+    array(
+        'ten'   => 'GitLab',
+        'icon'  => 'all_inclusive',
+        'mau'   => '#FC6D26',
+        'rgb'   => '252,109,38',
+        'mo_ta' => 'Nen tang DevOps toan dien, tich hop CI/CD manh me.',
+    ),
+    array(
+        'ten'   => 'Docker Compose',
+        'icon'  => 'layers',
+        'mau'   => '#2496ED',
+        'rgb'   => '36,150,237',
+        'mo_ta' => 'Dieu phoi moi truong da container de dang va nhat quan.',
+    ),
+);
+
+$k23_terminal = array(
+    array('lenh' => 'whoami',          'ket_qua' => 'Sinh vien Khoi nghiep &amp; DevOps Engineer'),
+    array('lenh' => 'cat su_menh.txt', 'ket_qua' => 'Tu dong hoa, Toi uu hoa, Trien khai.'),
+    array('lenh' => 'git log -1 --oneline', 'ket_qua' => esc_html($k23_commit)),
+);
+
+$k23_lien_ket = array(
+    array('nhan' => 'GitHub',        'url' => 'https://' . $k23_repo),
+    array('nhan' => 'Trang chu',     'url' => home_url('/')),
+    array('nhan' => 'Quan tri',      'url' => admin_url()),
+    array('nhan' => 'Tai lieu',      'url' => home_url('/')),
+);
 ?>
 <!DOCTYPE html>
-<html class="light" <?php language_attributes(); ?>>
+<html class="dark" <?php language_attributes(); ?>>
 <head>
 <meta charset="<?php bloginfo('charset'); ?>"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Anybody:wght@400;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
-  tailwind.config = {
-    darkMode: "class",
-    theme: { extend: {
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
       colors: {
-        "error":"#ba1a1a","surface-variant":"#e2e2e2","tertiary":"#5f5e5e","error-container":"#ffdad6",
-        "on-primary-fixed":"#161e00","on-tertiary":"#ffffff","on-background":"#1a1c1c",
-        "primary-fixed-dim":"#abd600","secondary-container":"#e4006c","on-error":"#ffffff",
-        "on-error-container":"#93000a","on-tertiary-fixed":"#1c1b1b","surface-container-lowest":"#ffffff",
-        "secondary-fixed-dim":"#ffb1c3","on-secondary-fixed":"#3f0019","surface-container-highest":"#e2e2e2",
-        "outline":"#747a60","surface-container":"#eeeeee","surface":"#f9f9f9","tertiary-fixed":"#e5e2e1",
-        "surface-dim":"#dadada","background":"#f9f9f9","secondary":"#b60055","tertiary-container":"#efeceb",
-        "on-tertiary-container":"#6c6a6a","tertiary-fixed-dim":"#c8c6c5","primary-fixed":"#c3f400",
-        "outline-variant":"#c4c9ac","on-surface-variant":"#444933","surface-container-high":"#e8e8e8",
-        "on-primary-fixed-variant":"#3c4d00","on-secondary":"#ffffff","inverse-surface":"#2f3131",
-        "secondary-fixed":"#ffd9e0","inverse-on-surface":"#f0f1f1","on-surface":"#1a1c1c",
-        "surface-bright":"#f9f9f9","primary":"#506600","surface-tint":"#506600","inverse-primary":"#abd600",
-        "on-tertiary-fixed-variant":"#474646","surface-container-low":"#f3f3f4","primary-container":"#ccff00",
-        "on-primary":"#ffffff","on-secondary-container":"#fffbff","on-secondary-fixed-variant":"#8f0041",
-        "on-primary-container":"#5b7300"
+        "background": "#051424",
+        "surface": "#051424",
+        "surface-dim": "#051424",
+        "surface-bright": "#2c3a4c",
+        "surface-variant": "#273647",
+        "surface-container-lowest": "#010f1f",
+        "surface-container-low": "#0d1c2d",
+        "surface-container": "#122131",
+        "surface-container-high": "#1c2b3c",
+        "surface-container-highest": "#273647",
+        "on-background": "#d4e4fa",
+        "on-surface": "#d4e4fa",
+        "on-surface-variant": "#bbcabf",
+        "primary": "#4edea3",
+        "primary-fixed": "#6ffbbe",
+        "primary-fixed-dim": "#4edea3",
+        "primary-container": "#10b981",
+        "on-primary": "#003824",
+        "on-primary-container": "#00422b",
+        "secondary": "#bec6e0",
+        "secondary-container": "#3f465c",
+        "on-secondary": "#283044",
+        "tertiary": "#7bd0ff",
+        "tertiary-container": "#19aee8",
+        "on-tertiary": "#00354a",
+        "error": "#ffb4ab",
+        "outline": "#86948a",
+        "outline-variant": "#3c4a42",
+        "surface-tint": "#4edea3"
       },
-      borderRadius: { DEFAULT:"0.25rem", lg:"0.5rem", xl:"0.75rem", full:"9999px" },
-      spacing: { "container-max":"1440px", xs:"4px", base:"8px", lg:"48px", sm:"12px",
-                 gutter:"20px", md:"24px", xl:"80px" },
+      borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+      spacing: { "max-width": "1200px", "base": "4px", "xs": "8px", "sm": "16px", "md": "24px", "lg": "48px", "xl": "80px" },
       fontFamily: {
-        "headline-lg-mobile":["Anybody"],"label-bold":["Be Vietnam Pro"],"headline-lg":["Anybody"],
-        "body-md":["Be Vietnam Pro"],"display-xl":["Anybody"],"title-md":["Anybody"],
-        "caption":["Be Vietnam Pro"],"body-lg":["Be Vietnam Pro"]
+        "body-base": ["Inter"], "display-lg": ["Inter"], "display-lg-mobile": ["Inter"],
+        "headline-md": ["Inter"], "code-sm": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"]
       },
       fontSize: {
-        "headline-lg-mobile":["32px",{lineHeight:"40px",letterSpacing:"-0.01em",fontWeight:"700"}],
-        "label-bold":["14px",{lineHeight:"20px",fontWeight:"700"}],
-        "headline-lg":["48px",{lineHeight:"56px",letterSpacing:"-0.02em",fontWeight:"700"}],
-        "body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],
-        "display-xl":["80px",{lineHeight:"88px",letterSpacing:"-0.04em",fontWeight:"800"}],
-        "title-md":["24px",{lineHeight:"32px",fontWeight:"600"}],
-        "caption":["12px",{lineHeight:"16px",fontWeight:"500"}],
-        "body-lg":["18px",{lineHeight:"28px",fontWeight:"400"}]
+        "body-base": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+        "code-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+        "label-caps": ["12px", { "lineHeight": "16px", "fontWeight": "600" }]
       }
-    }}
+    }
   }
+}
 </script>
 <style>
-  .glass-panel { background: rgba(255,255,255,.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-  .shadow-ambient-lvl1 { box-shadow: 0 10px 30px rgba(0,0,0,.05); }
-  .btn-primary-vibe { background-color:#ccff00; color:#000; font-weight:800; transition:all .3s ease; }
-  .btn-primary-vibe:hover { background-color:#e4006c; color:#fff; }
-  .btn-secondary-vibe { background:transparent; border:2px solid #1a1c1c; color:#1a1c1c; font-weight:700; transition:all .3s ease; }
-  .btn-secondary-vibe:hover { background:#1a1c1c; color:#fff; }
-  .input-vibe { border:2px solid #1a1c1c; transition:all .2s ease; }
-  .input-vibe:focus { outline:none; border-color:#e4006c; box-shadow:0 0 0 4px rgba(228,0,108,.2); }
-  .nav-link-vibe { position:relative; }
-  .nav-link-vibe::after { content:''; position:absolute; width:0; height:4px; bottom:-4px; left:0;
-                          background-color:#ccff00; transition:width .3s ease; }
-  .nav-link-vibe:hover::after { width:100%; }
-  .product-card-vibe { transition: transform .3s ease, box-shadow .3s ease; }
-  .product-card-vibe:hover { transform: translateY(-4px) scale(1.02); box-shadow:0 15px 40px rgba(0,0,0,.1); }
-  .product-card-image-vibe { transition: transform .5s ease; }
-  .product-card-vibe:hover .product-card-image-vibe { transform: scale(1.05); }
-  .quick-add-overlay { opacity:0; transform: translateY(10px); transition: all .3s ease; }
-  .product-card-vibe:hover .quick-add-overlay { opacity:1; transform: translateY(0); }
-  /* Thanh quản trị WordPress cao 32px — đẩy header dính xuống cho khỏi bị che */
-  body.admin-bar header.vibe-nav { top: 32px; }
+body { background-color:#051424; color:#d4e4fa; }
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, rgba(60,74,66,.2) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(60,74,66,.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.glass-card {
+  background-color: rgba(18,33,49,.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid #3c4a42;
+}
+.glass-card:hover { border-color:#4edea3; box-shadow:0 0 15px rgba(78,222,163,.1); }
+.cursor-blink { animation: blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.terminal-window { background-color:#020617; border-radius:.5rem; overflow:hidden; border:1px solid #3c4a42; }
+.terminal-header { background-color:#122131; padding:8px 12px; display:flex; align-items:center; border-bottom:1px solid #3c4a42; }
+.terminal-dots { display:flex; gap:6px; }
+.terminal-dot { width:12px; height:12px; border-radius:50%; }
+.dot-red{background:#ff5f56} .dot-yellow{background:#ffbd2e} .dot-green{background:#27c93f}
+/* Chua thanh admin bar cua WordPress de header cong khong bi che */
+body.admin-bar header.k23-nav { top: 32px; }
+@media screen and (max-width: 782px) { body.admin-bar header.k23-nav { top: 46px; } }
 </style>
 <?php wp_head(); ?>
 </head>
+<body <?php body_class('font-body-base text-body-base bg-background text-on-surface antialiased min-h-screen flex flex-col'); ?>>
 
-<body <?php body_class('bg-background text-on-background font-body-md text-body-md antialiased overflow-x-hidden selection:bg-primary-container selection:text-on-primary-fixed'); ?>>
+<!-- TopNavBar -->
+<header class="k23-nav fixed top-0 w-full z-50 bg-background/80 backdrop-blur-xl border-b border-outline-variant">
+  <div class="max-w-[1200px] mx-auto px-md h-16 flex items-center justify-between">
+    <div class="font-code-sm text-label-caps font-bold text-primary tracking-tighter">DEVOPS_PORTFOLIO</div>
 
-<!-- Thanh điều hướng -->
-<header class="vibe-nav w-full top-0 sticky z-50 bg-background border-b-4 border-primary">
-  <div class="flex justify-between items-center px-gutter max-w-container-max mx-auto h-20">
-    <a class="font-headline-lg text-headline-lg font-black tracking-tighter text-primary hover:opacity-80 transition-opacity"
-       href="<?php echo esc_url(home_url('/')); ?>">VIBE</a>
-
-    <nav class="hidden md:flex items-center gap-lg">
-      <a class="nav-link-vibe text-on-background font-body-md text-body-md hover:text-secondary transition-colors duration-200"
-         href="<?php echo esc_url(home_url('/')); ?>">Trang Chủ</a>
-      <a class="text-primary font-bold border-b-4 border-primary pb-1 font-body-md text-body-md" href="#">Bộ Sưu Tập</a>
-      <a class="nav-link-vibe text-on-background font-body-md text-body-md hover:text-secondary transition-colors duration-200" href="#mix-match">Xu Hướng</a>
-      <a class="nav-link-vibe text-on-background font-body-md text-body-md hover:text-secondary transition-colors duration-200" href="#danh-gia">Đánh Giá</a>
+    <nav class="hidden md:flex items-center gap-md">
+      <a class="font-code-sm text-code-sm text-primary border-b-2 border-primary pb-1 transition-all duration-300" href="<?php echo esc_url(get_permalink()); ?>">Portfolio</a>
+      <a class="font-code-sm text-code-sm text-on-surface-variant hover:text-primary transition-colors duration-300" href="#cong-cu">Cong cu</a>
+      <a class="font-code-sm text-code-sm text-on-surface-variant hover:text-primary transition-colors duration-300" href="#chuyen-mon">Chuyen mon</a>
+      <a class="font-code-sm text-code-sm text-on-surface-variant hover:text-primary transition-colors duration-300" href="<?php echo esc_url(home_url('/')); ?>">Trang chu</a>
     </nav>
 
-    <div class="flex items-center gap-sm">
-      <button class="p-2 text-primary hover:text-secondary transition-colors duration-200 scale-105 hover:scale-110">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 0;">person</span>
-      </button>
-      <button class="p-2 text-primary hover:text-secondary transition-colors duration-200 scale-105 hover:scale-110 relative">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 0;">shopping_bag</span>
-        <span class="absolute top-1 right-1 flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-container opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-secondary-container"></span>
-        </span>
-      </button>
-    </div>
+    <a class="hidden md:inline-flex items-center justify-center px-sm py-xs bg-primary-container text-on-primary-container font-code-sm text-code-sm rounded hover:bg-primary transition-colors duration-300"
+       href="<?php echo esc_url('https://' . $k23_repo); ?>" target="_blank" rel="noopener">
+      Xem ma nguon
+    </a>
+
+    <a class="md:hidden text-on-surface-variant p-2" href="<?php echo esc_url(home_url('/')); ?>" aria-label="Ve trang chu">
+      <span class="material-symbols-outlined">home</span>
+    </a>
   </div>
 </header>
 
-<main class="w-full">
+<main class="flex-grow pt-24 pb-xl">
 
-  <!-- Đường dẫn phân cấp -->
-  <div class="max-w-container-max mx-auto px-gutter py-md">
-    <nav class="flex text-on-surface-variant font-caption text-caption uppercase tracking-wider gap-xs items-center">
-      <a class="hover:text-primary transition-colors" href="<?php echo esc_url(home_url('/')); ?>">VIBE</a>
-      <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-      <a class="hover:text-primary transition-colors" href="#">Bộ Sưu Tập</a>
-      <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-      <span class="font-bold text-on-background">Áo Hoodie Oversize Phong Cách</span>
-    </nav>
-  </div>
+  <!-- Hero -->
+  <section class="relative max-w-[1200px] mx-auto px-md min-h-[640px] flex items-center mb-xl">
+    <div class="absolute inset-0 bg-grid-pattern opacity-50 z-0 pointer-events-none"></div>
 
-  <!-- Chi tiết sản phẩm -->
-  <section class="max-w-container-max mx-auto px-gutter grid grid-cols-1 md:grid-cols-12 gap-xl md:gap-lg mb-xl items-start">
-
-    <!-- Cột trái: thư viện ảnh -->
-    <div class="md:col-span-7 flex flex-col gap-sm">
-      <div class="relative w-full aspect-[4/5] bg-surface-container rounded-xl overflow-hidden shadow-ambient-lvl1">
-        <img class="w-full h-full object-cover" alt="Người mẫu mặc áo hoodie oversize trong bối cảnh đô thị"
-             src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKT4BfeyZiCRU9CIaSUQrQNgMZaO083nYsRz8X1C2VCCpB0erPTptZIBj9GJpbXySpnK8p0VzWipm7hY-YcOnHc6Q6hv19_ISVH4ATtd_6zmKfK1y0rA9fspMEbRQT0L8CNWGkxGNn7riTorzYpPSpgn_JAkSHN5FeT9BeGs2NQ63_l5iSqJc3drZvBFr2zZHZUP_gpEPmIOucnnJfpGOHolHlNECbU54o2eGb44ZdVMK12Ae6Wg"/>
-        <div class="absolute top-md left-md flex flex-col gap-xs">
-          <span class="bg-secondary-container text-on-secondary px-sm py-xs font-label-bold text-label-bold uppercase tracking-wider rounded-sm">Mới Nhất</span>
-          <span class="bg-on-background text-background px-sm py-xs font-label-bold text-label-bold uppercase tracking-wider rounded-sm">Hot Trend</span>
+    <div class="relative z-10 w-full grid grid-cols-1 md:grid-cols-2 gap-lg items-center">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded bg-surface-container-high border border-outline-variant mb-6">
+          <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+          <span class="font-code-sm text-label-caps text-on-surface-variant">HE THONG TRUC TUYEN &mdash; <?php echo esc_html(gethostname()); ?></span>
         </div>
-      </div>
 
-      <div class="grid grid-cols-4 gap-sm">
-        <?php
-        $k23_thumbs = [
-          ['https://lh3.googleusercontent.com/aida-public/AB6AXuAJkRK6flDDsD-Mv2OxHrsukaAWsBycmaJ1PpZuWy3DcaYxh3V18ourAQ1w8IYf6b5d9bi4zYA823CgZ6pKglAHQK9BaQZyLO4ajhQZxTQFebTLdBqpphR6Mf_FMEKPgqFI73fjEONwwhGHJgIp5KAeLapf_yPA9Y5F3eQkDt-LcS-pdeYV_2LFU6fG0UvYZGTVQ4e63MlfYBrSWMDDvV2XnQHT4vgGmoZ9B44JN7ink1Y-I3L0Eg', 'Cận cảnh chất vải nỉ bông', true],
-          ['https://lh3.googleusercontent.com/aida-public/AB6AXuCvfaRzsJl7mV-h0X0oM_a6-0gFFIvJ84-YnUCE8sLuL_nUeU-YpcoTNimFcW47rmpmrmufCXPnOc2ManszHa-23kI24QBVQ1gO7wKec3FLnc0mWUlwkt5yuFlaA2AtneCB-qpq_24jwffORVHy5Huf13x140v7Q6lqiiuwyRGMLlqg3tMk_uUa8OnqbcMTFF30lzO07CxwR5P9jv5YpWkokhe6y6cgj7zVH1TXPvwROSUzCbClbQ', 'Mặt sau chiếc áo', false],
-          ['https://lh3.googleusercontent.com/aida-public/AB6AXuC1VZQMWi4eiHKljQvo1JG6Lci56jCYW4F21OLoACoSyXjuyMPneeH4y6ZaaRmsv1_pUSJcEmNikdpmRvSoApGu0Zo8n2xG_fGNiTV-M6LtAOAONW2RCalb-FAp68vyr1nqBTGQK2AIFZBAPmg1bkXjzqjUbYAd6IaB_h6cpnZZVSYfhWmV_qx2Gt4qfa9yymp9rTfgsz8UnUatuaplsWifX8D08wgoLDCw_8mL9e7uzDh5idEnvw', 'Chi tiết mũ và dây rút', false],
-          ['https://lh3.googleusercontent.com/aida-public/AB6AXuAb6ZpsKw07u3mlsfxF895ctwyWUU4pc6cmg8FvHT9DK5_fn26nzbWTPhmOQMOJUBWHrLU71JRA3x-dqhhmfIXWSXmVOMkQGo1YbjPNOKiPVAuAxofvMOffFOV4A0EEPmi_pOKoNKI7CXTRR_7s6fdvh0Tptuci1R8LVkA0weu42UK0W0hazsoywuAW9ZTSUjc8tUd9L8W2P5yoa5YwwuRvoGWqD-iY-Fp0nQ2lwB_6YcR5JYhfCA', 'Ảnh phong cách tại skatepark', false],
-        ];
-        foreach ($k23_thumbs as $i => $th) : ?>
-          <button class="aspect-square bg-surface-container rounded-lg overflow-hidden border-2 <?php echo $th[2] ? 'border-primary-container' : 'border-transparent hover:border-outline-variant'; ?> transition-colors relative">
-            <img class="w-full h-full object-cover <?php echo $i === 3 ? 'opacity-70' : ''; ?>"
-                 alt="<?php echo esc_attr($th[1]); ?>" src="<?php echo esc_url($th[0]); ?>"/>
-            <?php if ($i === 3) : ?>
-              <span class="absolute inset-0 m-auto w-8 h-8 material-symbols-outlined text-on-background bg-background rounded-full p-1 shadow-ambient-lvl1" style="font-variation-settings:'FILL' 1;">play_arrow</span>
-            <?php endif; ?>
-          </button>
-        <?php endforeach; ?>
-      </div>
-    </div>
+        <h1 class="font-display-lg-mobile md:font-display-lg text-on-surface mb-6">
+          Kien tao <span class="text-primary">Tuong Lai</span><br/>
+          voi Co So Ha Tang.
+        </h1>
 
-    <!-- Cột phải: thông tin sản phẩm -->
-    <div class="md:col-span-5 flex flex-col md:sticky md:top-28">
-      <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-black tracking-tighter text-on-background mb-xs uppercase">
-        Áo Hoodie Oversize Phong Cách
-      </h1>
-
-      <div class="flex items-center gap-sm mb-md">
-        <span class="font-title-md text-title-md font-bold text-primary">850,000đ</span>
-        <span class="font-body-md text-body-md text-on-surface-variant line-through">1,200,000đ</span>
-      </div>
-
-      <p class="font-body-lg text-body-lg text-on-surface-variant mb-lg border-b-2 border-surface-variant pb-md">
-        Chiếc hoodie định hình phong cách đường phố thế hệ mới. Form dáng oversize cực rộng, chất vải nỉ bông
-        dày dặn đứng form, sẵn sàng cho mọi outfit nổi loạn nhất của bạn.
-      </p>
-
-      <div class="mb-md">
-        <h3 class="font-label-bold text-label-bold text-on-background uppercase tracking-wider mb-sm">Màu sắc: Đen Than</h3>
-        <div class="flex gap-sm">
-          <?php foreach (['#1A1A1A' => true, '#E4006C' => false, '#CCFF00' => false] as $mau => $chon) : ?>
-            <label class="relative cursor-pointer">
-              <input <?php checked($chon); ?> class="peer sr-only" name="color" type="radio"/>
-              <div class="w-10 h-10 rounded-full border-2 border-transparent peer-checked:border-primary-container peer-checked:ring-2 peer-checked:ring-primary-container ring-offset-2 transition-all"
-                   style="background-color: <?php echo esc_attr($mau); ?>"></div>
-            </label>
-          <?php endforeach; ?>
-        </div>
-      </div>
-
-      <div class="mb-lg">
-        <div class="flex justify-between items-center mb-sm">
-          <h3 class="font-label-bold text-label-bold text-on-background uppercase tracking-wider">Kích thước</h3>
-          <a class="font-caption text-caption text-secondary font-bold hover:underline decoration-2 underline-offset-2" href="#">Hướng dẫn chọn size</a>
-        </div>
-        <div class="grid grid-cols-4 gap-sm">
-          <?php foreach ([['S', false, false], ['M', true, false], ['L', false, false], ['XL', false, true]] as $sz) : ?>
-            <label class="cursor-pointer">
-              <input <?php checked($sz[1]); ?> class="peer sr-only" name="size" type="radio" <?php disabled($sz[2]); ?>/>
-              <div class="py-sm text-center border-2 border-on-background font-label-bold text-label-bold peer-checked:bg-on-background peer-checked:text-background hover:bg-surface-variant transition-colors uppercase <?php echo $sz[2] ? 'opacity-50 cursor-not-allowed' : ''; ?>">
-                <?php echo esc_html($sz[0]); ?>
-              </div>
-              <?php if ($sz[2]) : ?><span class="sr-only">Hết hàng</span><?php endif; ?>
-            </label>
-          <?php endforeach; ?>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-sm mb-lg">
-        <div class="flex gap-sm">
-          <div class="flex items-center border-2 border-on-background h-14 w-32 justify-between px-xs">
-            <button class="p-2 hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">remove</span></button>
-            <span class="font-label-bold text-label-bold">1</span>
-            <button class="p-2 hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">add</span></button>
-          </div>
-          <button class="flex-1 btn-primary-vibe h-14 flex items-center justify-center font-label-bold text-label-bold uppercase tracking-wider text-lg">
-            Thêm Vào Giỏ
-          </button>
-        </div>
-        <button class="w-full btn-secondary-vibe h-14 flex items-center justify-center gap-xs font-label-bold text-label-bold uppercase tracking-wider">
-          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 0;">favorite</span>
-          Yêu Thích Gấp
-        </button>
-      </div>
-
-      <ul class="flex flex-col gap-sm font-caption text-caption text-on-surface-variant bg-surface-container-low p-md rounded-lg shadow-ambient-lvl1 border border-surface-variant">
-        <li class="flex items-center gap-sm"><span class="material-symbols-outlined text-primary">local_shipping</span>Freeship cho đơn hàng từ 500k.</li>
-        <li class="flex items-center gap-sm"><span class="material-symbols-outlined text-primary">replay</span>Đổi trả linh hoạt trong 7 ngày (chưa cắt tag).</li>
-        <li class="flex items-center gap-sm"><span class="material-symbols-outlined text-primary">verified</span>Cam kết chính hãng VIBE 100%.</li>
-      </ul>
-    </div>
-  </section>
-
-  <div class="max-w-container-max mx-auto px-gutter py-md"><hr class="border-t-2 border-surface-variant"/></div>
-
-  <!-- Mô tả và đánh giá -->
-  <section id="danh-gia" class="max-w-container-max mx-auto px-gutter grid grid-cols-1 md:grid-cols-2 gap-xl mb-xl scroll-mt-28">
-    <div class="flex flex-col gap-md">
-      <h2 class="font-title-md text-title-md font-bold text-on-background uppercase tracking-tight flex items-center gap-sm">
-        <span class="w-8 h-8 bg-primary-container text-on-primary-fixed flex items-center justify-center rounded-sm material-symbols-outlined">info</span>
-        Chi Tiết Sản Phẩm
-      </h2>
-      <div class="max-w-none font-body-md text-body-md text-on-surface-variant space-y-sm">
-        <p>Thiết kế không dành cho những ai thích sự an toàn. Áo Hoodie Oversize VIBE mang đến diện mạo cool ngầu với form dáng thả lỏng tối đa, che khuyết điểm cực tốt và tạo hiệu ứng layer xuất sắc.</p>
-        <ul class="list-disc pl-5 space-y-xs">
-          <li><strong>Chất liệu:</strong> Nỉ bông French Terry cao cấp, định lượng 350gsm. Dày, đứng form, không xù lông.</li>
-          <li><strong>Chi tiết:</strong> Mũ trùm sâu hai lớp, dây rút kim loại chống rỉ, túi kangaroo rộng rãi phía trước.</li>
-          <li><strong>Họa tiết:</strong> Thêu logo 3D nổi bật ở ngực trái, kỹ thuật thêu sắc nét.</li>
-          <li><strong>Sản xuất:</strong> Thiết kế và sản xuất tại Việt Nam.</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="flex flex-col gap-md">
-      <h2 class="font-title-md text-title-md font-bold text-on-background uppercase tracking-tight flex items-center gap-sm justify-between">
-        <span class="flex items-center gap-sm">
-          <span class="w-8 h-8 bg-secondary-container text-on-secondary flex items-center justify-center rounded-sm material-symbols-outlined">forum</span>
-          Đánh Giá (4.8/5)
-        </span>
-        <button class="font-label-bold text-label-bold text-primary underline decoration-2 underline-offset-2 hover:text-secondary transition-colors">Xem tất cả</button>
-      </h2>
-
-      <div class="flex flex-col gap-sm">
-        <?php
-        $k23_reviews = [
-          ['M', 'Minh Trí', 5, '2 ngày trước', 'Áo form siêu rộng mặc cực cháy luôn anh em. Chất vải xịn, giặt máy không bị nhão. Mua màu đen than dễ phối đồ lắm.', 'bg-tertiary-container text-on-tertiary-container'],
-          ['L', 'Linh Phạm', 4, '1 tuần trước', 'Mình cao 1m60 mặc size S vẫn trùm mông rộng rãi đúng ý. Màu neon ở ngoài nổi bần bật. Trừ 1 sao vì giao hàng hơi lâu.', 'bg-primary-container text-on-primary-fixed'],
-        ];
-        foreach ($k23_reviews as $rv) : ?>
-          <div class="bg-surface p-md rounded-xl border border-surface-variant shadow-ambient-lvl1">
-            <div class="flex justify-between items-start mb-sm">
-              <div class="flex items-center gap-sm">
-                <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold <?php echo esc_attr($rv[5]); ?>"><?php echo esc_html($rv[0]); ?></div>
-                <div>
-                  <h4 class="font-label-bold text-label-bold"><?php echo esc_html($rv[1]); ?></h4>
-                  <div class="flex text-primary-container text-[16px]">
-                    <?php for ($i = 1; $i <= 5; $i++) : ?>
-                      <span class="material-symbols-outlined <?php echo $i > $rv[2] ? 'text-outline' : ''; ?>" style="font-variation-settings:'FILL' 1;">star</span>
-                    <?php endfor; ?>
-                  </div>
-                </div>
-              </div>
-              <span class="font-caption text-caption text-outline"><?php echo esc_html($rv[3]); ?></span>
+        <div class="terminal-window mb-8 shadow-lg">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <div class="terminal-dot dot-red"></div>
+              <div class="terminal-dot dot-yellow"></div>
+              <div class="terminal-dot dot-green"></div>
             </div>
-            <p class="font-body-md text-body-md text-on-surface"><?php echo esc_html($rv[4]); ?></p>
+            <div class="ml-4 font-code-sm text-xs text-on-surface-variant">bash -- 80x24</div>
           </div>
-        <?php endforeach; ?>
+          <div class="p-4 font-code-sm text-code-sm">
+            <?php foreach ($k23_terminal as $dong) : ?>
+              <p class="text-primary">$ <?php echo esc_html($dong['lenh']); ?></p>
+              <p class="text-on-surface mb-2"><?php echo $dong['ket_qua']; ?></p>
+            <?php endforeach; ?>
+            <p class="text-primary">$ <span class="cursor-blink">_</span></p>
+          </div>
+        </div>
+
+        <div class="flex gap-4">
+          <a class="px-6 py-3 bg-primary text-background font-code-sm font-semibold rounded hover:bg-primary-fixed transition-colors shadow-[0_0_15px_rgba(78,222,163,0.3)]"
+             href="#chuyen-mon">Xem Du An</a>
+          <a class="px-6 py-3 bg-transparent border border-outline text-primary font-code-sm font-semibold rounded hover:border-primary transition-colors"
+             href="<?php echo esc_url(home_url('/')); ?>">Ve Trang Chu</a>
+        </div>
+      </div>
+
+      <div class="hidden md:block relative h-full min-h-[400px]">
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="w-full max-w-sm aspect-square relative">
+            <img class="object-cover rounded-xl border border-outline-variant shadow-2xl h-full w-full opacity-80 mix-blend-screen"
+                 alt="Minh hoa cac tu may chu va luong du lieu trong moi truong dien toan dam may"
+                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRlbYe1bdzy5Syl36d3I31yHWDRkHGkyd6qpXWoYT1lMYYfuISssDNfXCuXeolfx6kvOncVw_rUjH_Wxdqt6CuElkS0ov4HparBCorTuJAbGqBXpFs4uHmd9ovSdQyXt-lh4nzixiHuoBpqm4iK6H2As2gdt-bbgCetpA3fYiXtIxFjbaICWkNmKyycZWxEVin48qR2XWU0ZhT8KwZ6mn4jhnepaHAivOZW5dMqPpt6GvDnP0NjV0"/>
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Sản phẩm liên quan -->
-  <section id="mix-match" class="max-w-container-max mx-auto px-gutter py-xl bg-surface-container-low rounded-t-[3rem] mt-xl scroll-mt-28">
-    <div class="text-center mb-lg">
-      <h2 class="font-display-xl text-[48px] leading-[56px] md:text-display-xl font-black uppercase tracking-tighter text-on-background">Mix &amp; Match</h2>
-      <p class="font-body-lg text-body-lg text-on-surface-variant mt-sm">Hoàn thiện outfit của bạn với những item cực cháy này.</p>
+  <!-- Cong cu cot loi -->
+  <section id="cong-cu" class="max-w-[1200px] mx-auto px-md py-xl relative scroll-mt-24">
+    <div class="mb-12">
+      <h2 class="font-headline-md text-on-surface mb-2">Cong Cu Cot Loi</h2>
+      <p class="font-body-base text-on-surface-variant">Nen tang ky thuat cho quy trinh phat trien va trien khai lien tuc.</p>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-sm md:gap-md">
-      <?php
-      $k23_products = [
-        ['Quần Đáy Thụng', 'Quần Cargo Parachute', '650,000đ', '', '', 'https://lh3.googleusercontent.com/aida-public/AB6AXuC2HdL6SYaEAYRGzbSu7O988YckIXHhdYGGmwpZXg3uHqnUx7LiAlJXW9Pev4jM0GWAN5_nRiuNiYptP3QuANNkF2iVMPMxW2kkibDqvkLf0PukwbhgUfdeQh9EH8TELPfdOv0k0e4xMgY4yabzpTnYQoAArNU54aIUJeExeLXjNte9uDRwl7Vb4ubp-okLbSn9gJyzkJTvfGBVYErYhgJIqqrHINUq-Rq5yPm-0oxX95XB63aynw', false],
-        ['Giày Sneaker', 'Giày Chunky V-Max', '950,000đ', '1,200,000đ', '-20%', 'https://lh3.googleusercontent.com/aida-public/AB6AXuBlLUo1HutpWdqCoikhcQjKCRyRc6Yw6iRgxMX88dPCTO_e9CiUljbbqn2zBl3CiU7xdTr5KZOwX3biwMeczF1S6hHtpvgl_0FA4B9aD3roWHp84X52aRekPEYyDaEXboDnQpEzmALOCF2snn7iFEraYZoCx0AP82z9B6YHX8tPAm6QNLIprkgQoyeeta56jB0-dWYfgmCeLVCbAUr73ak2CgpYhfl-uXfFjHmf-zGGsNHJMpQ9qw', false],
-        ['Phụ Kiện', 'Mũ Lưỡi Trai Distressed', '250,000đ', '', '', 'https://lh3.googleusercontent.com/aida-public/AB6AXuAqKgZ960p0U2j4sax78YOz7Yq5AQTlR93cKBigx3a7jLu6Ozl8o9fc1G57xi06JP0u9CxrFzkmDMPk-7LrGIfF5GRMCRZUXds6N7Xy_OvukmDQaPD5NtzpB3hFuGAJO06TFsfsz7cRPUkmr3KJZyv4GXkpZ9tDuDZSgQUst7Wht9Z3G2SIDoc3HBTHj8fr0g4Gsaddvgps4XJqIPrdc0PHiba8AdEPFa2r9DTXjBGb7qeFSMMAWA', true],
-        ['Trang Sức', 'Dây Chuyền Cuban V-Link', '380,000đ', '', '', 'https://lh3.googleusercontent.com/aida-public/AB6AXuBa-dhf-m8mh4LuhMt0keH0iGAsdM-f-yX0SOQFiMzALgaukleHzTfDGeUBN5GVRplDGCt3HiKWmrikmVFV3TH4uT5-9UjIriGsY68TF831Z25sPCnZef0xDq0o0PbJy8m8y7V-onxtUlzZPCufzSBWfUsiCUwvSFejgC9fgUioty1L46jCSw1mRlu5jYWeq9cJ_86zL3c4i1UgRY1YqM9tuvgiEezTAqeLMIRzWoOS0qAUT2z56g', true],
-      ];
-      foreach ($k23_products as $sp) : ?>
-        <div class="product-card-vibe group relative flex-col gap-sm <?php echo $sp[6] ? 'hidden md:flex' : 'flex'; ?>">
-          <div class="relative w-full aspect-[3/4] rounded-xl overflow-hidden bg-surface">
-            <img class="product-card-image-vibe w-full h-full object-cover" alt="<?php echo esc_attr($sp[1]); ?>" src="<?php echo esc_url($sp[5]); ?>"/>
-            <?php if ($sp[4]) : ?>
-              <div class="absolute top-sm right-sm z-10">
-                <span class="bg-secondary-container text-on-secondary px-2 py-1 font-caption text-[10px] uppercase font-bold rounded-sm"><?php echo esc_html($sp[4]); ?></span>
-              </div>
-            <?php endif; ?>
-            <div class="absolute bottom-0 left-0 w-full p-sm quick-add-overlay z-10">
-              <button class="w-full py-sm glass-panel font-label-bold text-label-bold uppercase tracking-wider rounded-lg border border-white/20 hover:bg-white/90 hover:text-black transition-colors">+ Thêm Nhanh</button>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <?php foreach ($k23_cong_cu as $cc) : ?>
+        <div class="glass-card p-6 rounded-xl transition-all duration-300 group">
+          <div class="w-12 h-12 flex items-center justify-center rounded-lg bg-surface-container-high mb-4 text-on-surface-variant transition-all"
+               style="--k23-mau: <?php echo esc_attr($cc['mau']); ?>"
+               onmouseover="this.style.color='<?php echo esc_js($cc['mau']); ?>';this.style.boxShadow='0 0 10px rgba(<?php echo esc_js($cc['rgb']); ?>,0.5)'"
+               onmouseout="this.style.color='';this.style.boxShadow=''">
+            <span class="material-symbols-outlined text-3xl"><?php echo esc_html($cc['icon']); ?></span>
           </div>
-          <div class="flex flex-col">
-            <span class="font-caption text-caption text-outline uppercase tracking-wider mb-xs"><?php echo esc_html($sp[0]); ?></span>
-            <h3 class="font-title-md text-[18px] leading-[24px] md:text-title-md font-bold text-on-background line-clamp-1"><?php echo esc_html($sp[1]); ?></h3>
-            <div class="flex gap-sm items-center mt-xs">
-              <span class="font-body-md text-body-md font-bold <?php echo $sp[3] ? 'text-secondary' : 'text-primary'; ?>"><?php echo esc_html($sp[2]); ?></span>
-              <?php if ($sp[3]) : ?><span class="font-caption text-caption line-through text-outline"><?php echo esc_html($sp[3]); ?></span><?php endif; ?>
-            </div>
-          </div>
+          <h3 class="font-code-sm font-bold text-on-surface mb-2"><?php echo esc_html($cc['ten']); ?></h3>
+          <p class="font-body-base text-sm text-on-surface-variant"><?php echo esc_html($cc['mo_ta']); ?></p>
         </div>
       <?php endforeach; ?>
     </div>
   </section>
 
-  <!-- Nội dung soạn trong trang WordPress, nếu có -->
-  <?php if (have_posts()) : while (have_posts()) : the_post();
-      if (trim(get_the_content()) !== '') : ?>
-        <section class="max-w-container-max mx-auto px-gutter py-xl">
-          <div class="bg-surface p-md rounded-xl border border-surface-variant shadow-ambient-lvl1">
-            <?php the_content(); ?>
-          </div>
-        </section>
-      <?php endif;
-  endwhile; endif; ?>
+  <!-- Chuyen mon (bento grid) -->
+  <section id="chuyen-mon" class="max-w-[1200px] mx-auto px-md py-xl scroll-mt-24">
+    <div class="mb-12">
+      <h2 class="font-headline-md text-on-surface mb-2">Chuyen Mon</h2>
+      <p class="font-body-base text-on-surface-variant">Cac linh vuc tap trung de xay dung he thong phan mem ben vung.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:auto-rows-[250px]">
+
+      <div class="md:col-span-2 glass-card rounded-xl p-6 relative overflow-hidden flex flex-col justify-end min-h-[250px]">
+        <div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent z-10"></div>
+        <img class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity z-0"
+             alt="So do mot pipeline CI/CD hien dai"
+             src="https://lh3.googleusercontent.com/aida-public/AB6AXuDanW2VO1Ub4SjjGpFLYQJjTEnN4dzdFx5FhuQtwwGD6JSuLQhNUTE_GUobHFLjJ3BCpSJQdH3n9AZ96VGGJVjwz_gbCsOMDbK3NzNXkT-jrqXJEca9sxQjVI2Y_Fx1No4sUlmYMSxbTfbZ_HSMrWiuBgFIqfPMSZ3tVP3aYKnerWMizE1nPqVYOjSKdlfJ9hXn1zBpufqvutTSmbzHSVDrdVYdiPAMWHou1zv66HOp0yAEmjETnjg"/>
+        <div class="relative z-20">
+          <h3 class="font-headline-md text-on-surface mb-2">CI/CD Pipelines</h3>
+          <p class="font-body-base text-on-surface-variant max-w-md">Tu dong hoa toan bo quy trinh tu kiem thu den trien khai, dam bao phan phoi phan mem nhanh chong va an toan.</p>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[250px]">
+        <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center border border-outline-variant">
+          <span class="material-symbols-outlined text-primary">terminal</span>
+        </div>
+        <div>
+          <h3 class="font-headline-md text-on-surface mb-2">IaC</h3>
+          <p class="font-body-base text-sm text-on-surface-variant">Quan ly va cau hinh ha tang qua ma nguon (Terraform, Ansible), loai bo thao tac thu cong.</p>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl p-6 relative flex flex-col justify-between border-t-2 border-t-primary min-h-[250px]">
+        <div class="flex items-center gap-2 font-code-sm text-xs text-primary mb-4">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+          </span>
+          STATUS: HEALTHY
+        </div>
+        <div>
+          <h3 class="font-headline-md text-on-surface mb-2">Giam Sat He Thong</h3>
+          <p class="font-body-base text-sm text-on-surface-variant">Trien khai Prometheus &amp; Grafana de theo doi hieu suat va canh bao thoi gian thuc.</p>
+        </div>
+      </div>
+
+      <div class="md:col-span-2 glass-card rounded-xl p-6 flex flex-col justify-center items-center text-center relative overflow-hidden min-h-[250px]">
+        <div class="absolute inset-0 bg-grid-pattern opacity-20 pointer-events-none"></div>
+        <span class="material-symbols-outlined text-6xl text-surface-variant mb-4">hub</span>
+        <h3 class="font-headline-md text-on-surface mb-2">Kien Truc Microservices</h3>
+        <p class="font-body-base text-on-surface-variant max-w-lg">Thiet ke va van hanh cac dich vu doc lap, co kha nang mo rong cao tren moi truong Kubernetes.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Phien ban dang chay: bang chung chuoi AI -> GitHub -> may ao -->
+  <section class="max-w-[1200px] mx-auto px-md">
+    <div class="glass-card rounded-xl p-6">
+      <div class="font-code-sm text-label-caps text-primary mb-4">PHIEN BAN DANG CHAY</div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 font-code-sm text-code-sm">
+        <div>
+          <div class="text-on-surface-variant text-xs mb-1">Theme</div>
+          <div class="text-on-surface">K23 v<?php echo esc_html($k23_ver); ?></div>
+        </div>
+        <div>
+          <div class="text-on-surface-variant text-xs mb-1">Commit</div>
+          <div class="text-primary"><?php echo esc_html($k23_commit); ?></div>
+        </div>
+        <div>
+          <div class="text-on-surface-variant text-xs mb-1">May chu</div>
+          <div class="text-on-surface"><?php echo esc_html(gethostname()); ?></div>
+        </div>
+        <div>
+          <div class="text-on-surface-variant text-xs mb-1">Thoi gian tai</div>
+          <div class="text-on-surface"><?php echo number_format((microtime(true) - $k23_bat_dau) * 1000, 2); ?> ms</div>
+        </div>
+      </div>
+      <p class="font-body-base text-sm text-on-surface-variant mt-4">
+        Ma commit o tren do script <span class="font-code-sm text-on-surface">vm/capnhat.sh</span> ghi vao file
+        <span class="font-code-sm text-on-surface">COMMIT.txt</span> sau moi lan <span class="font-code-sm text-on-surface">git pull</span>.
+        Doi chieu no voi commit moi nhat tren <?php echo esc_html($k23_repo); ?> de xac nhan may ao dang chay dung phien ban vua day len.
+      </p>
+    </div>
+  </section>
 
 </main>
 
-<footer class="w-full mt-xl bg-surface-container-highest">
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-md px-gutter py-xl max-w-container-max mx-auto">
-    <div class="flex flex-col gap-sm md:col-span-1">
-      <div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary">VIBE</div>
-      <p class="font-body-md text-body-md text-secondary mt-2">
-        © <?php echo esc_html(date('Y')); ?> <?php echo esc_html(get_bloginfo('name')); ?> — Thiết kế cho thế hệ Gen Z.
-      </p>
+<footer class="w-full py-xl bg-surface-container-lowest border-t border-outline-variant mt-xl">
+  <div class="max-w-[1200px] mx-auto px-md flex flex-col md:flex-row justify-between items-center gap-base">
+    <div class="font-code-sm text-label-caps text-on-surface-variant">
+      &copy; <?php echo esc_html(date('Y')); ?> <?php echo esc_html(get_bloginfo('name')); ?>. All systems operational.
     </div>
-
-    <div class="flex flex-col gap-sm">
-      <h4 class="font-label-bold text-label-bold text-on-background uppercase tracking-wider mb-sm">Khám Phá</h4>
-      <a class="font-body-md text-body-md text-on-surface-variant hover:underline decoration-primary decoration-4 opacity-80 hover:opacity-100 transition-opacity" href="<?php echo esc_url(home_url('/')); ?>">Về Trang Chủ</a>
-      <a class="font-body-md text-body-md text-on-surface-variant hover:underline decoration-primary decoration-4 opacity-80 hover:opacity-100 transition-opacity" href="#">Chính Sách Đổi Trả</a>
-    </div>
-
-    <div class="flex flex-col gap-sm">
-      <h4 class="font-label-bold text-label-bold text-on-background uppercase tracking-wider mb-sm">Phiên Bản Đang Chạy</h4>
-      <span class="font-caption text-caption text-on-surface-variant">Theme K23 v<?php echo esc_html($k23_ver); ?></span>
-      <span class="font-caption text-caption text-secondary font-bold"><?php echo esc_html($k23_commit); ?></span>
-      <span class="font-caption text-caption text-outline">Máy chủ: <?php echo esc_html(gethostname()); ?></span>
-      <span class="font-caption text-caption text-outline">Tải lúc: <?php echo esc_html(date('H:i:s d/m/Y')); ?></span>
-    </div>
-
-    <div class="flex flex-col gap-sm">
-      <h4 class="font-label-bold text-label-bold text-on-background uppercase tracking-wider mb-sm">Đăng Ký Bản Tin</h4>
-      <p class="font-caption text-caption text-on-surface-variant mb-xs">Nhận thông báo về drop mới và deal sốc.</p>
-      <div class="flex gap-xs">
-        <input class="input-vibe flex-1 bg-surface-container-lowest px-sm py-xs font-body-md text-body-md rounded-sm" placeholder="Email của bạn..." type="email"/>
-        <button class="bg-primary text-on-primary font-bold px-md py-xs rounded-sm hover:bg-primary-container hover:text-on-primary-fixed transition-colors">GỬI</button>
-      </div>
-    </div>
+    <nav class="flex gap-4 flex-wrap justify-center">
+      <?php foreach ($k23_lien_ket as $lk) : ?>
+        <a class="font-code-sm text-code-sm text-on-surface-variant hover:text-tertiary transition-colors"
+           href="<?php echo esc_url($lk['url']); ?>"><?php echo esc_html($lk['nhan']); ?></a>
+      <?php endforeach; ?>
+    </nav>
   </div>
 </footer>
 
