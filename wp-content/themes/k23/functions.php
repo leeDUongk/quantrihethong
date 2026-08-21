@@ -12,7 +12,7 @@ define('K23_REPO',     'github.com/<tai-khoan-github>/quantrihethong-<MSSV>');
 
 // Lời chào hiển thị trên trang Portfolio DevOps.
 // Đây là hằng số dễ sửa nhất để minh họa chuỗi: sửa ở đây -> push -> pull -> tải lại trang.
-define('K23_LOI_CHAO', 'Xin chào K23K!');
+define('K23_LOI_CHAO', 'Xin chào K23I!');
 
 function k23_setup() {
     add_theme_support('title-tag');
