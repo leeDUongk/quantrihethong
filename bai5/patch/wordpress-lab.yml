@@ -1,0 +1,102 @@
+# ~/bai3/wordpress-lab/docker-compose.yml  -- BAN DA SUA CHO BAI LAB 5
+#
+# QUAN TRONG: doi chieu truoc khi chep de:
+#   diff ~/bai3/wordpress-lab/docker-compose.yml ~/npm-lab/patch/wordpress-lab.yml
+#
+# Thay doi so voi Bai lab 3:
+#   1. wp-app, wp-phpmyadmin: bo khai bao ports
+#   2. wp-app, wp-phpmyadmin: noi them vao npm_network
+#   3. wp-app: them WORDPRESS_CONFIG_EXTRA de tin X-Forwarded-Proto
+#   4. wp-network: internal: true  (tuy chon -- chan CSDL ra Internet)
+# wp-mysql va wp-redis GIU NGUYEN.
+#
+# LUU Y: trong file Compose, "$$" la mot dau "$" that. Viet mot dau se bi
+# Compose hieu la bien cua no va thay bang chuoi rong.
+services:
+  wp-mysql:
+    image: mysql:8.0
+    container_name: wp-mysql
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - wp_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - wp-network
+
+  wp-redis:
+    image: redis:7.2-alpine
+    container_name: wp-redis
+    restart: unless-stopped
+    networks:
+      - wp-network
+
+  wp-app:
+    image: wordpress:6.6.1-php8.3-apache
+    container_name: wp-app
+    restart: unless-stopped
+    depends_on:
+      wp-mysql:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      WORDPRESS_DB_HOST: wp-mysql:3306
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      # ---- THAY DOI 3 ----
+      # Bao WordPress tin header X-Forwarded-Proto do proxy gan vao.
+      # Hai dong WP_HOME / WP_SITEURL chi bo comment SAU KHI HTTPS da chay (muc 7.4).
+      WORDPRESS_CONFIG_EXTRA: |
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO'])
+            && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+        // define('WP_HOME',    'https://blog.MSSV.lab');
+        // define('WP_SITEURL', 'https://blog.MSSV.lab');
+    volumes:
+      - wp_data:/var/www/html
+    # ---- THAY DOI 1: bo ports ----
+    # ports:
+    #   - "8081:80"
+    # ---- THAY DOI 2 ----
+    networks:
+      - wp-network
+      - npm_network
+
+  wp-phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: wp-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: wp-mysql
+      PMA_PORT: 3306
+    # ---- THAY DOI 1: bo ports ----
+    # ports:
+    #   - "8082:80"
+    # ---- THAY DOI 2 ----
+    networks:
+      - wp-network
+      - npm_network
+
+volumes:
+  wp_db_data:
+  wp_data:
+
+networks:
+  wp-network:
+    name: wp-network
+    # ---- THAY DOI 4 (tuy chon): CSDL va Redis mat duong ra Internet ----
+    # Bo dong duoi neu WordPress can tai plugin ma bao loi mang.
+    internal: true
+  npm_network:
+    external: true

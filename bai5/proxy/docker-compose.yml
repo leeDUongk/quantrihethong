@@ -1,0 +1,25 @@
+# Bai lab 5 - Nginx Proxy Manager
+# Phien ban co dinh de moi lop chay ra ket qua giong nhau.
+services:
+  npm:
+    image: jc21/nginx-proxy-manager:2.11.3
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"                            # HTTP  -- se chuyen huong sang HTTPS
+      - "443:443"                          # HTTPS
+      - "81:81"                            # Trang quan tri -- xem muc 8.4 truoc khi dong
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+      - ./custom:/data/nginx/custom:ro     # cau hinh Nginx tu viet -- muc 8.3
+    networks:
+      - npm_network
+
+volumes:
+  npm_data:
+  npm_letsencrypt:
+
+networks:
+  npm_network:
+    external: true

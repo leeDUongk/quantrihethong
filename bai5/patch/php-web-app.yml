@@ -1,0 +1,62 @@
+# ~/bai3/php-web-app/docker-compose.yml  -- BAN DA SUA CHO BAI LAB 5
+#
+# QUAN TRONG: doi chieu voi file cua chinh minh truoc khi chep de:
+#   diff ~/bai3/php-web-app/docker-compose.yml ~/npm-lab/patch/php-web-app.yml
+#
+# Chi co HAI thay doi so voi Bai lab 3:
+#   1. php-web: bo khai bao ports
+#   2. php-web: noi them vao npm_network
+# mysql-db va redis-cache GIU NGUYEN -- proxy khong can thay CSDL.
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - php-network
+
+  redis-cache:
+    image: redis:7.2-alpine
+    container_name: redis-cache
+    restart: unless-stopped
+    networks:
+      - php-network
+
+  php-web:
+    build: .
+    image: php-web-app:3.0
+    container_name: php-web
+    restart: unless-stopped
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    env_file: .env
+    # ---- THAY DOI 1: bo ports, dich vu chi ra ngoai qua Reverse Proxy ----
+    # ports:
+    #   - "${APP_PORT}:80"
+    # ---- THAY DOI 2: noi them npm_network ----
+    networks:
+      - php-network
+      - npm_network
+
+volumes:
+  db_data:
+
+networks:
+  php-network:
+    name: php-network
+  npm_network:
+    external: true

@@ -1,0 +1,15 @@
+# Website tinh - dong vai "mau chung" de khoanh vung loi.
+# Khong khai bao ports: chi ra ngoai qua Reverse Proxy.
+services:
+  static-site:
+    image: nginx:1.27-alpine
+    container_name: static-site
+    restart: unless-stopped
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+    networks:
+      - npm_network
+
+networks:
+  npm_network:
+    external: true
