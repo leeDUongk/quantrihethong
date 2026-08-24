@@ -1,0 +1,87 @@
+# STACK CUU HO -- chi dung khi CHUA hoan thanh Bai lab 3 (duong B, muc 2.2).
+#
+# Dung bon container CUNG TEN voi Bai lab 3 nhung DU LIEU TRONG, de cac muc
+# sau cua Bai lab 5 chay duoc y nguyen.
+#
+#   docker compose -f ~/npm-lab/patch/cuu-ho.yml up -d
+#
+# LUU Y: da di duong nay thi phan nghiem thu "du lieu cu con nguyen" o muc 6.4
+# se khong chung minh duoc. Nen quay lai hoan thanh Bai lab 3 sau, vi du an
+# cuoi hoc phan can no.
+name: cuu-ho-bai5
+
+services:
+  wp-mysql:
+    image: mysql:8.0
+    container_name: wp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: RootCuuHo_MSSV
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wpuser
+      MYSQL_PASSWORD: WpCuuHo_MSSV
+    volumes:
+      - cuuho_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - wp-network
+
+  wp-app:
+    image: wordpress:6.6.1-php8.3-apache
+    container_name: wp-app
+    restart: unless-stopped
+    depends_on:
+      wp-mysql:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: wp-mysql:3306
+      WORDPRESS_DB_USER: wpuser
+      WORDPRESS_DB_PASSWORD: WpCuuHo_MSSV
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: |
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO'])
+            && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+    volumes:
+      - cuuho_wp:/var/www/html
+    networks:
+      - wp-network
+      - npm_network
+
+  wp-phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: wp-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: wp-mysql
+      PMA_PORT: 3306
+    networks:
+      - wp-network
+      - npm_network
+
+  # Thay cho ung dung PHP cua Bai lab 2 -- chi de co mot backend cho app.<MSSV>.lab
+  php-web:
+    image: php:8.3-apache
+    container_name: php-web
+    restart: unless-stopped
+    command: >
+      bash -c "echo '<h1>Ung dung PHP - ban cuu ho</h1>
+      <p>Chua hoan thanh Bai lab 2/3 nen day la trang thay the.</p>'
+      > /var/www/html/index.html && apache2-foreground"
+    networks:
+      - npm_network
+
+volumes:
+  cuuho_db:
+  cuuho_wp:
+
+networks:
+  wp-network:
+    name: wp-network
+  npm_network:
+    external: true

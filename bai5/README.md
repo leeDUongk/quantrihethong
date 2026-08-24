@@ -21,6 +21,7 @@ cd ~/npm-lab
 | `static-site/` | Website tĩnh làm mẫu chứng | Sửa `html/index.html` |
 | `patch/php-web-app.yml` | Bản đã sửa cho `~/bai3/php-web-app` | **Diff rồi mới chép đè** |
 | `patch/wordpress-lab.yml` | Bản đã sửa cho `~/bai3/wordpress-lab` | **Diff rồi mới chép đè** |
+| `patch/cuu-ho.yml` | Stack tối giản cho ai chưa hoàn thành Bài lab 3 | Chỉ dùng khi đi **đường B**, mục 2.2 |
 | `tao-chung-chi.sh` | Sinh chứng chỉ tự ký có SAN 5 tên miền | `./tao-chung-chi.sh <MSSV>` |
 | `kiem-tra.sh` | Chạy toàn bộ lệnh kiểm chứng mục 5.6 và 6.5 | `./kiem-tra.sh <MSSV>` |
 
@@ -49,6 +50,15 @@ diff ~/bai3/wordpress-lab/docker-compose.yml patch/wordpress-lab.yml
 # 6. Kiểm tra sau mỗi bước lớn
 ./kiem-tra.sh k23
 ```
+
+## Chưa hoàn thành Bài lab 3?
+
+```bash
+docker compose -f ~/npm-lab/patch/cuu-ho.yml up -d
+```
+
+Dựng bốn container cùng tên với Bài lab 3 nhưng **dữ liệu trống**, để các mục sau vẫn chạy được.
+Đổi lại, phần nghiệm thu "dữ liệu cũ còn nguyên" ở mục 6.4 sẽ không chứng minh được.
 
 ## Cảnh báo
 
