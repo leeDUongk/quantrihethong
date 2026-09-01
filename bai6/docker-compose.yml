@@ -3,6 +3,11 @@
 # HAI MANG TACH BACH:
 #   db_data  (internal: true) -- hai DBMS, KHONG co duong ra Internet
 #   db_admin                  -- hai cong cu quan tri, noi ca hai mang
+#
+# Dat ten du an co dinh. Khong ghi dong nay thi Compose lay ten thu muc
+# dang dung lam tien to cho volume -- doi ten thu muc la volume "bien mat".
+name: bai6-lab
+
 services:
 
   mysql-db:
