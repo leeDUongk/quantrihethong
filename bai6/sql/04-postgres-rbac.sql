@@ -18,8 +18,10 @@ GRANT SELECT (id, ho_ten, email, phong) ON nhanvien TO r_doc_MSSV;
 CREATE ROLE r_ketoan_MSSV;
 GRANT r_doc_MSSV TO r_ketoan_MSSV;
 GRANT INSERT, UPDATE ON hoadon TO r_ketoan_MSSV;
--- Cot SERIAL can quyen tren SEQUENCE, thieu la INSERT bao loi
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO r_ketoan_MSSV;
+-- Cot SERIAL can quyen tren SEQUENCE, thieu la INSERT bao loi.
+-- USAGE la DU cho nextval(). SELECT chi can cho currval() nen KHONG cap
+-- -- giu dung nguyen tac dac quyen toi thieu.
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO r_ketoan_MSSV;
 
 -- Muc 3: ke thua muc 2
 CREATE ROLE r_truongphong_MSSV;
@@ -28,10 +30,17 @@ GRANT DELETE ON hoadon   TO r_truongphong_MSSV;
 GRANT SELECT ON nhanvien TO r_truongphong_MSSV;
 
 -- ============ 2. QUYEN CHO BANG TUONG LAI ============
--- Moi bang tao SAU lenh nay se tu dong co SELECT cho r_doc.
--- Khong hoi to cho bang da co.
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
+-- DIEU KIEN QUAN TRONG: quyen mac dinh chi ap dung cho bang do DUNG ROLE ghi
+-- trong "FOR ROLE" tao ra. Khong ghi FOR ROLE thi mac dinh la role dang chay
+-- lenh nay. Bang do role KHAC tao ra se KHONG duoc huong. Quyen mac dinh
+-- cung KHONG tu ke thua qua quan he thanh vien giua cac role.
+--
+-- Trong bai lab, moi bang deu do role "postgres" tao (qua initdb.d):
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
   GRANT SELECT ON TABLES TO r_doc_MSSV;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+  GRANT USAGE ON SEQUENCES TO r_ketoan_MSSV;
+-- Khong hoi to cho bang da co truoc do.
 
 -- ============ 3. NGUOI DUNG ============
 CREATE ROLE an_MSSV    LOGIN PASSWORD 'MatKhau_An_MSSV!';

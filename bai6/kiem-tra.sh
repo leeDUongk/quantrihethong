@@ -49,4 +49,30 @@ docker compose exec -T postgres-db psql -U postgres -d "$APP_DB" -c "
 SELECT tablename, rowsecurity FROM pg_tables
  WHERE schemaname='public' AND tablename='khachhang';"
 
+echo "--- Chinh sach dang co ---"
+docker compose exec -T postgres-db psql -U postgres -d "$APP_DB" -c "
+SELECT policyname, cmd, qual FROM pg_policies WHERE tablename='khachhang';"
+
+echo "--- Hai nguoi dung PHAI thay hai tap dong khac nhau ---"
+for u in an binh; do
+  printf "  %-6s thay %s dong: " "$u" ""
+  docker compose exec -T -e PGPASSWORD="MatKhau_$(echo ${u^})_$MSSV!" postgres-db \
+    psql -h postgres-db -U "${u}_$MSSV" -d "$APP_DB" -t -A \
+    -c "SELECT COUNT(*) FROM khachhang;" 2>/dev/null || echo "khong ket noi duoc"
+done
+
+echo "--- Bien phien KHONG duoc phep vuot qua chinh sach ---"
+printf "  an_%s sau khi SET app.chi_nhanh='HCM': " "$MSSV"
+docker compose exec -T -e PGPASSWORD="MatKhau_An_$MSSV!" postgres-db \
+  psql -h postgres-db -U "an_$MSSV" -d "$APP_DB" -t -A \
+  -c "SET app.chi_nhanh='HCM'; SELECT COUNT(*) FROM khachhang;" 2>/dev/null | tail -1
+echo "  (con so nay phai GIU NGUYEN nhu tren -- neu doi la chinh sach con lo hong)"
+
+echo "--- Nguoi dung KHONG duoc doc bang anh xa ---"
+printf "  an_%s doc nv_chi_nhanh: " "$MSSV"
+docker compose exec -T -e PGPASSWORD="MatKhau_An_$MSSV!" postgres-db \
+  psql -h postgres-db -U "an_$MSSV" -d "$APP_DB" -t -A \
+  -c "SELECT COUNT(*) FROM nv_chi_nhanh;" >/dev/null 2>&1 \
+  && echo "DOC DUOC (SAI)" || echo "bi chan (DUNG)"
+
 echo "Xong. Doc ky cac dong (SAI) neu co."

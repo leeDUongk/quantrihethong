@@ -19,7 +19,8 @@ if [ "$TAT_CA" -eq 1 ]; then
   echo " CANH BAO: se xoa TOAN BO container, image, volume, network"
   echo " cua Docker tren may ao nay -- ke ca thu khong thuoc bai lab."
 else
-  echo " Se dung va xoa container + volume cua cac bai lab 2, 3, 5, 6."
+  echo " Se dung va xoa container + volume CO TEN THUOC cac bai lab 2, 3, 5, 6."
+  echo " Khong dung docker prune toan cuc, nen KHONG dung toi tai nguyen khac."
   echo " DU LIEU TRONG CAC BAI LAB DO SE MAT."
 fi
 echo " Khong the hoan tac."
@@ -52,9 +53,14 @@ else
            wordpress wp-db; do
     docker rm -f "$c" 2>/dev/null && echo "    - da xoa $c" || true
   done
-  echo "==> 3. Xoa volume va network mo coi"
-  docker volume prune -f >/dev/null
-  docker network prune -f >/dev/null
+  echo "==> 3. Xoa volume va network CUA CAC BAI LAB (theo ten, khong prune toan cuc)"
+  for v in $(docker volume ls -q 2>/dev/null | grep -E 'bai3|wordpress|php-web|npm|db-lab|proxy|static'); do
+    docker volume rm -f "$v" >/dev/null 2>&1 && echo "    - da xoa volume $v"
+  done
+  for n in npm_network php-network wp-network backend \
+           db-lab_db_data db-lab_db_admin proxy_npm_network; do
+    docker network rm "$n" >/dev/null 2>&1 && echo "    - da xoa network $n"
+  done
 fi
 
 echo

@@ -40,7 +40,7 @@ báo healthy**, nạp RBAC cho MySQL và PostgreSQL, bật Row Level Security, r
 | `sql/02-mysql-rbac.sql` | Ba vai trò phân cấp, ba người dùng, `SET DEFAULT ROLE` | 5.3–5.5 |
 | `sql/03-postgres-dulieu.sql` | Bảng và dữ liệu mẫu — **tự chạy** lúc khởi tạo | 6.1 |
 | `sql/04-postgres-rbac.sql` | Cùng mô hình vai trò, ba tầng quyền, `ALTER DEFAULT PRIVILEGES` | 6.3–6.4 |
-| `sql/05-postgres-rls.sql` | Row Level Security — lọc tới từng dòng | 6.6 |
+| `sql/05-postgres-rls.sql` | Row Level Security — **cách sai để khai thác, rồi cách đúng dùng `current_user`** | 6.6 |
 | `backup/sao-luu.sh` | Sao lưu cả hai CSDL, giữ 7 bản gần nhất | 8.1 |
 | `backup/khoi-phuc.sh` | Khôi phục **và in ra số dòng trước/sau** làm bằng chứng | 8.2 |
 | `ra-soat/mysql-ra-soat.sql` | Bốn truy vấn kiểm toán quyền | 9.2 |
@@ -62,7 +62,7 @@ cd ~/db-lab && set -a && source .env && set +a
 docker compose exec mysql-db mysql -u an_k23    -p"MatKhau_An_k23!"    "$APP_DB"
 docker compose exec mysql-db mysql -u binh_k23  -p"MatKhau_Binh_k23!"  "$APP_DB"
 docker compose exec mysql-db mysql -u cuong_k23 -p"MatKhau_Cuong_k23!" "$APP_DB"
-docker compose exec postgres-db psql -U an_k23 -d "$APP_DB"
+docker compose exec postgres-db psql -h postgres-db -U an_k23 -d "$APP_DB"   # -h ép đi qua TCP
 
 # Sao lưu và khôi phục thật
 ./backup/sao-luu.sh
@@ -72,6 +72,19 @@ docker compose exec postgres-db psql -U an_k23 -d "$APP_DB"
 docker compose exec -T mysql-db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < ra-soat/mysql-ra-soat.sql
 docker compose exec -T postgres-db psql -U postgres -d "$APP_DB" < ra-soat/pg-ra-soat.sql
 ```
+
+## Về Row Level Security
+
+File `sql/05` cố ý giữ **cả hai cách**:
+
+- **Phần A (để dạng chú thích)** — chính sách đọc chi nhánh từ `current_setting('app.chi_nhanh')`.
+  Chạy được và trình diễn được, **nhưng không an toàn**: chính người dùng gõ `SET app.chi_nhanh = 'HCM'`
+  là đọc được dữ liệu chi nhánh khác. Sinh viên phải tự tay khai thác lỗ hổng này trước.
+- **Phần B (đang chạy)** — chính sách gọi hàm `chi_nhanh_cua_toi()` với `SECURITY DEFINER`,
+  tra bảng ánh xạ `nv_chi_nhanh` theo `current_user`. Người dùng không đọc, không sửa được bảng đó,
+  và không đổi được `current_user`, nên **không vượt qua được**.
+
+Nguyên tắc: **biến phiên do người dùng đặt là đầu vào không tin cậy, không dùng làm căn cứ phân quyền.**
 
 ## Ba điều hay sai
 
