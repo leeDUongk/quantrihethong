@@ -19,9 +19,9 @@ cd ~/npm-lab
 | `proxy/docker-compose.yml` | Stack Nginx Proxy Manager, phiên bản cố định `2.11.3` | Không cần sửa |
 | `proxy/custom/http.conf` | `limit_req_zone` — mục 8.3 | Đổi `MSSV` thành mã của mình |
 | `static-site/` | Website tĩnh làm mẫu chứng | Sửa `html/index.html` |
-| `patch/php-web-app.yml` | Bản đã sửa cho `~/bai3/php-web-app` | **Diff rồi mới chép đè** |
-| `patch/wordpress-lab.yml` | Bản đã sửa cho `~/bai3/wordpress-lab` | **Diff rồi mới chép đè** |
-| `patch/cuu-ho.yml` | Stack tối giản cho ai chưa hoàn thành Bài lab 3 | Chỉ dùng khi đi **đường B**, mục 2.2 |
+| `backend/docker-compose.yml` | **Stack bốn dịch vụ — đường chính** | `cp .env.example .env` rồi đổi mật khẩu |
+| `patch/php-web-app.yml` | Bản đã sửa cho `~/bai3/php-web-app` — *đường mở rộng* | **Diff rồi mới chép đè** |
+| `patch/wordpress-lab.yml` | Bản đã sửa cho `~/bai3/wordpress-lab` — *đường mở rộng* | **Diff rồi mới chép đè** |
 | `tao-chung-chi.sh` | Sinh chứng chỉ tự ký có SAN 5 tên miền | `./tao-chung-chi.sh <MSSV>` |
 | `kiem-tra.sh` | Chạy toàn bộ lệnh kiểm chứng mục 5.6 và 6.5 | `./kiem-tra.sh <MSSV>` |
 
@@ -29,7 +29,7 @@ cd ~/npm-lab
 
 ```bash
 # 0. Đổi MSSV trong hai chỗ
-sed -i 's/MSSV/k23/g' proxy/custom/http.conf static-site/html/index.html
+sed -i 's/MSSV/k23/g' proxy/custom/http.conf static-site/html/index.html backend/app/index.php backend/.env.example
 
 # 1. Network dùng chung — làm trước tiên
 docker network create npm_network
@@ -40,9 +40,12 @@ cd proxy && docker compose up -d && cd ..
 # 3. Website tĩnh
 cd static-site && docker compose up -d && cd ..
 
-# 4. Đối chiếu rồi sửa hai stack của Bài lab 3
-diff ~/bai3/php-web-app/docker-compose.yml   patch/php-web-app.yml
-diff ~/bai3/wordpress-lab/docker-compose.yml patch/wordpress-lab.yml
+# 4. Backend bốn dịch vụ (đường chính)
+cd backend && cp .env.example .env && nano .env && docker compose up -d && cd ..
+
+#    hoặc đường mở rộng: đối chiếu rồi sửa hai stack của Bài lab 3
+#    diff ~/bai3/php-web-app/docker-compose.yml   patch/php-web-app.yml
+#    diff ~/bai3/wordpress-lab/docker-compose.yml patch/wordpress-lab.yml
 
 # 5. Chứng chỉ tự ký
 ./tao-chung-chi.sh k23
@@ -51,14 +54,18 @@ diff ~/bai3/wordpress-lab/docker-compose.yml patch/wordpress-lab.yml
 ./kiem-tra.sh k23
 ```
 
-## Chưa hoàn thành Bài lab 3?
+## Hai đường đi
+
+**Đường chính** — dựng stack mới, chỉ cần máy ảo có Docker:
 
 ```bash
-docker compose -f ~/npm-lab/patch/cuu-ho.yml up -d
+cd ~/npm-lab/backend && cp .env.example .env && nano .env && docker compose up -d
 ```
 
-Dựng bốn container cùng tên với Bài lab 3 nhưng **dữ liệu trống**, để các mục sau vẫn chạy được.
-Đổi lại, phần nghiệm thu "dữ liệu cũ còn nguyên" ở mục 6.4 sẽ không chứng minh được.
+**Đường mở rộng** — nếu hai stack ở `~/bai3` còn chạy được, đưa chính chúng ra sau proxy (mục 5.6).
+Sát thực tế hơn vì giữ nguyên dữ liệu cũ. Dùng hai file trong `patch/`, **diff trước khi chép đè**.
+
+Hai đường dùng **trùng tên container**, nên chỉ chọn một — chạy cả hai sẽ báo *container name already in use*.
 
 ## Cảnh báo
 

@@ -1,0 +1,93 @@
+# Bai lab 5 -- bon dich vu web nam sau Reverse Proxy.
+#
+# HAI NGUYEN TAC AP DUNG CHO CA FILE NAY:
+#   1. KHONG service nao khai bao "ports"  -> duong vao duy nhat la proxy
+#   2. Chi container WEB moi noi vao npm_network -> CSDL khong lo ra proxy
+#
+#   cp .env.example .env   &&   nano .env   &&   docker compose up -d
+services:
+
+  # ---------- Co so du lieu: KHONG ra proxy, KHONG ra Internet ----------
+  wp-mysql:
+    image: mysql:8.0
+    container_name: wp-mysql
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  # ---------- WordPress: blog.<MSSV>.lab ----------
+  wp-app:
+    image: wordpress:6.6.1-php8.3-apache
+    container_name: wp-app
+    restart: unless-stopped
+    depends_on:
+      wp-mysql:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      WORDPRESS_DB_HOST: wp-mysql:3306
+      WORDPRESS_DB_USER: ${MYSQL_USER}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
+      # "$$" la mot dau "$" that -- Compose coi "${...}" la bien cua no.
+      # Doan nay bao WordPress tin header X-Forwarded-Proto do proxy gan (muc 7.4).
+      # Hai dong WP_HOME / WP_SITEURL chi bo comment SAU KHI HTTPS da chay.
+      WORDPRESS_CONFIG_EXTRA: |
+        if (isset($$_SERVER['HTTP_X_FORWARDED_PROTO'])
+            && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+            $$_SERVER['HTTPS'] = 'on';
+        }
+        // define('WP_HOME',    'https://blog.MSSV.lab');
+        // define('WP_SITEURL', 'https://blog.MSSV.lab');
+    volumes:
+      - wp_data:/var/www/html
+    networks:
+      - backend
+      - npm_network
+
+  # ---------- phpMyAdmin: db.<MSSV>.lab -- PHAI gan Access List (muc 8.2) ----------
+  wp-phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: wp-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - wp-mysql
+    environment:
+      PMA_HOST: wp-mysql
+      PMA_PORT: 3306
+    networks:
+      - backend
+      - npm_network
+
+  # ---------- Ung dung PHP thuong: app.<MSSV>.lab ----------
+  php-web:
+    image: php:8.3-apache
+    container_name: php-web
+    restart: unless-stopped
+    volumes:
+      - ./app:/var/www/html
+    networks:
+      - npm_network
+
+volumes:
+  db_data:
+  wp_data:
+
+networks:
+  backend:
+    internal: true      # CSDL khong co duong ra Internet
+  npm_network:
+    external: true

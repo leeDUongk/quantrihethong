@@ -1,0 +1,91 @@
+# Bai lab 6 -- Quan tri co so du lieu: tai khoan, phan quyen va RBAC
+#
+# HAI MANG TACH BACH:
+#   db_data  (internal: true) -- hai DBMS, KHONG co duong ra Internet
+#   db_admin                  -- hai cong cu quan tri, noi ca hai mang
+services:
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${APP_DB}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Script trong initdb.d CHI chay khi volume con trong.
+      - ./sql/01-mysql-dulieu.sql:/docker-entrypoint-initdb.d/01.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - db_data
+
+  postgres-db:
+    image: postgres:16
+    container_name: postgres-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${APP_DB}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./sql/03-postgres-dulieu.sql:/docker-entrypoint-initdb.d/03.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - db_data
+
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql-db
+      PMA_PORT: 3306
+      UPLOAD_LIMIT: 64M
+    # BO khoi ports nay neu dat sau proxy Bai lab 5 (muc 4.4)
+    ports:
+      - "8080:80"
+    networks:
+      - db_admin
+      - db_data
+
+  pgadmin:
+    image: dpage/pgadmin4:8.12
+    container_name: pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      # Bo buoc dang nhap lai trong moi truong lab. KHONG dung tren he thong that.
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "8081:80"
+    networks:
+      - db_admin
+      - db_data
+
+volumes:
+  mysql_data:
+  pg_data:
+
+networks:
+  db_admin:
+  db_data:
+    internal: true
