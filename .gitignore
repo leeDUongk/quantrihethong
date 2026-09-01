@@ -15,3 +15,4 @@ desktop.ini
 
 # Cấu hình riêng của máy, không đưa lên chung
 .env
+_git_rac/
