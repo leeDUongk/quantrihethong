@@ -1,0 +1,8 @@
+# Bat buoc xuong dong kieu LF cho moi file van ban trong bo nguon nay.
+# Neu de Git tren Windows doi thanh CRLF, script bash se khong chay tren Ubuntu
+# va ky tu CR se lot vao mat khau doc tu .env -> loi "Access denied".
+* text=auto eol=lf
+*.sh   text eol=lf
+*.sql  text eol=lf
+*.yml  text eol=lf
+.env.example text eol=lf

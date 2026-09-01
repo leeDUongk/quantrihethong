@@ -4,8 +4,19 @@
 set -u
 MSSV="${1:-k23}"
 cd "$(dirname "$0")"
+sed -i 's/\r$//' .env 2>/dev/null || true
 set -a; source .env 2>/dev/null; set +a
 APP_DB="${APP_DB:-app_$MSSV}"
+
+# Neu chua dang nhap duoc bang tai khoan quan tri thi moi muc sau deu bao SAI
+# ma khong phai vi phan quyen. Kiem tra truoc va noi ro.
+if ! docker compose exec -T mysql-db \
+     mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-}" -e "SELECT 1;" >/dev/null 2>&1; then
+  echo "!! KHONG dang nhap duoc MySQL bang root voi mat khau trong .env."
+  echo "!! Cac muc 3 va 5 duoi day se trong -- KHONG phai loi phan quyen."
+  echo "!! Sua bang:  ./cai-dat.sh $MSSV --lam-lai"
+  echo
+fi
 
 echo "=== 1. Bon container phai deu healthy / running ==="
 docker compose ps
@@ -20,11 +31,13 @@ docker exec mysql-db timeout 5 bash -c "cat < /dev/null > /dev/tcp/8.8.8.8/53" 2
 
 echo
 echo "=== 3. Vai tro va tai khoan tren MySQL ==="
-docker compose exec -T mysql-db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -t <<SQL 2>/dev/null
-SELECT from_user AS vai_tro, to_user AS nguoi_dung FROM mysql.role_edges ORDER BY to_user;
-SQL
+docker compose exec -T mysql-db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -t \
+  -e "SELECT from_user AS vai_tro, to_user AS nguoi_dung
+        FROM mysql.role_edges ORDER BY to_user;" 2>&1 | grep -v "^mysql: \[Warning\]" \
+  || echo "  (khong doc duoc -- xem canh bao dang nhap o tren)"
 
 echo "=== 4. Vai tro va tai khoan tren PostgreSQL ==="
+echo "  (neu bang duoi day 0 rows thi sql/04-postgres-rbac.sql chua chay)"
 docker compose exec -T postgres-db psql -U postgres -d "$APP_DB" -c "
 SELECT m.rolname AS vai_tro, r.rolname AS thanh_vien
   FROM pg_auth_members am

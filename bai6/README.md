@@ -104,3 +104,24 @@ Nguyên tắc: **biến phiên do người dùng đặt là đầu vào không t
 - Hai cổng `8080` và `8081` mở ra ngoài chỉ để học cho nhanh. Trong dự án cuối học phần,
   công cụ quản trị CSDL **bắt buộc** nằm sau reverse proxy và có Access List (Bài lab 5).
 - Bản sao lưu nằm cùng máy ảo với CSDL thì **chưa phải là sao lưu** — hỏng ổ đĩa là mất cả hai.
+
+## Su co: ERROR 1045 khi cai dat
+
+MySQL va PostgreSQL chi doc mat khau trong `.env` **dung mot lan**, luc thu muc
+du lieu con trong. Neu volume da duoc tao tu lan chay truoc -- vi du ai do da
+`docker compose up -d` khi `.env` con chuoi `MSSV` chua thay -- thi mat khau
+nam trong volume van la ban cu, khong khop voi `.env` hien tai.
+
+Cach sua (xoa volume roi khoi tao lai, du lieu trong hai CSDL se mat):
+
+```bash
+cd ~/db-lab && ./cai-dat.sh <MSSV> --lam-lai
+```
+
+Tu ban nay, `cai-dat.sh` thu dang nhap quan tri vao ca hai DBMS **truoc khi**
+nap bat ky file SQL nao, va dung ngay tai cho kem cau lenh sua neu mat khau
+lech -- thay vi chet giua chung roi de moi buoc sau that bai theo day chuyen.
+
+File `.gitattributes` ep xuong dong LF cho toan bo bo nguon, tranh truong hop
+file tai ve qua Windows mang ky tu CR o cuoi dong -- Bash doc CR nhu mot phan
+cua mat khau con Docker Compose thi khong.

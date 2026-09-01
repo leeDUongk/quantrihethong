@@ -33,7 +33,10 @@ fi
 
 echo
 echo "==> 1. Dung cac stack Compose cua bai lab truoc (neu con thu muc)"
-for d in ~/bai3/php-web-app ~/bai3/wordpress-lab ~/npm-lab/proxy \
+# Ke ca chinh thu muc chua script nay -- sinh vien co the giai nen ra ten khac
+# ~/db-lab, khi do ten volume mang tien to khac va vong grep ben duoi se bo sot.
+THU_MUC_NAY="$(cd "$(dirname "$0")" && pwd)"
+for d in "$THU_MUC_NAY" ~/bai3/php-web-app ~/bai3/wordpress-lab ~/npm-lab/proxy \
          ~/npm-lab/static-site ~/npm-lab/backend ~/db-lab ~/php-web-app; do
   if [ -f "$d/docker-compose.yml" ]; then
     echo "    - $d"
@@ -54,7 +57,10 @@ else
     docker rm -f "$c" 2>/dev/null && echo "    - da xoa $c" || true
   done
   echo "==> 3. Xoa volume va network CUA CAC BAI LAB (theo ten, khong prune toan cuc)"
-  for v in $(docker volume ls -q 2>/dev/null | grep -E 'bai3|wordpress|php-web|npm|db-lab|proxy|static'); do
+  # Bat theo ca ten thu muc lan ten volume trong compose (mysql_data, pg_data),
+  # vi tien to volume la ten thu muc du an -- co the khong phai "db-lab".
+  for v in $(docker volume ls -q 2>/dev/null \
+             | grep -E 'bai3|wordpress|php-web|npm|db-lab|proxy|static|_mysql_data$|_pg_data$'); do
     docker volume rm -f "$v" >/dev/null 2>&1 && echo "    - da xoa volume $v"
   done
   for n in npm_network php-network wp-network backend \
