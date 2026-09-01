@@ -28,7 +28,7 @@ ALTER TABLE khachhang ENABLE ROW LEVEL SECURITY;
 -- truoc khi doc phan B. Bo dau "--" o ba dong CREATE POLICY tren de thu.
 
 -- =====================================================================
--- PHAN B -- CACH LAM DUNG: lay chi nhanh tu CURRENT_USER
+-- PHAN B -- CACH LAM DUNG: lay chi nhanh tu DANH TINH DANG NHAP
 -- =====================================================================
 
 -- B1. Bang anh xa nguoi dung -> chi nhanh.
@@ -43,8 +43,16 @@ INSERT INTO nv_chi_nhanh (db_user, chi_nhanh) VALUES
   ('binh_MSSV',  'HCM'),
   ('cuong_MSSV', 'HN');
 
+-- HAI DONG REVOKE, KHONG PHAI MOT. Day la mot cai bay that:
+-- muc 6.4 da chay
+--     ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
+--       GRANT SELECT ON TABLES TO r_doc_MSSV;
+-- nen bang nv_chi_nhanh VUA TAO XONG da TU DONG co SELECT cho r_doc_MSSV.
+-- REVOKE ... FROM PUBLIC khong dung toi quyen cap rieng cho role do.
+-- Quyen mac dinh la con dao hai luoi: no cap quyen cho ca bang bi mat ma
+-- ta vua tao ra, mot cach im lang.
 REVOKE ALL ON nv_chi_nhanh FROM PUBLIC;
--- CO Y khong cap quyen nao cho r_doc_MSSV.
+REVOKE ALL ON nv_chi_nhanh FROM r_doc_MSSV, r_ketoan_MSSV, r_truongphong_MSSV;
 
 -- B2. Ham tra ve chi nhanh cua nguoi DANG dang nhap.
 --     SECURITY DEFINER : ham chay voi quyen cua NGUOI TAO (postgres), nen
@@ -52,6 +60,15 @@ REVOKE ALL ON nv_chi_nhanh FROM PUBLIC;
 --     SET search_path   : chan tan cong danh trao bang qua search_path --
 --                        lo hong leo thang dac quyen kinh dien cua ham
 --                        SECURITY DEFINER.
+--
+--     PHAI DUNG session_user, KHONG DUOC DUNG current_user.
+--     Ben trong mot ham SECURITY DEFINER, current_user chinh la NGUOI SO HUU
+--     ham (postgres) chu khong phai nguoi goi -- do dung la y nghia cua
+--     SECURITY DEFINER. Neu viet current_user o day thi cau WHERE se tim
+--     dong co db_user = 'postgres', khong thay gi, ham tra ve NULL, chinh
+--     sach so sanh voi NULL nen KHONG AI THAY DONG NAO. Loi nay im lang:
+--     khong bao loi, chi tra ve 0 dong.
+--     session_user la nguoi da MO KET NOI -- dung thu ta can.
 CREATE OR REPLACE FUNCTION chi_nhanh_cua_toi()
 RETURNS VARCHAR
 LANGUAGE sql
@@ -59,7 +76,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT chi_nhanh FROM nv_chi_nhanh WHERE db_user = current_user;
+  SELECT chi_nhanh FROM nv_chi_nhanh WHERE db_user = session_user;
 $$;
 
 REVOKE ALL     ON FUNCTION chi_nhanh_cua_toi() FROM PUBLIC;

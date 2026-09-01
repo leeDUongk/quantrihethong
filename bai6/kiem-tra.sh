@@ -15,8 +15,8 @@ POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-RootPg_${MSSV}_2026}"
 
 # Khong dang nhap duoc bang tai khoan quan tri thi moi muc sau deu bao SAI
 # ma khong phai vi phan quyen. Kiem tra truoc va noi ro.
-if ! docker compose exec -T mysql-db \
-     mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" >/dev/null 2>&1; then
+if ! docker compose exec -T -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql-db \
+     mysql -uroot -e "SELECT 1;" >/dev/null 2>&1; then
   echo "!! KHONG dang nhap duoc MySQL bang root voi mat khau trong .env."
   echo "!! Cac muc 3 va 5 duoi day se trong -- KHONG phai loi phan quyen."
   echo "!! Sua bang:  ./cai-dat.sh $MSSV"
@@ -36,7 +36,7 @@ docker exec mysql-db timeout 5 bash -c "cat < /dev/null > /dev/tcp/8.8.8.8/53" 2
 
 echo
 echo "=== 3. Vai tro va tai khoan tren MySQL ==="
-docker compose exec -T mysql-db mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -t \
+docker compose exec -T -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql-db mysql -uroot -t \
   -e "SELECT from_user AS vai_tro, to_user AS nguoi_dung
         FROM mysql.role_edges ORDER BY to_user;" 2>&1 | grep -v "^mysql: \[Warning\]" \
   || echo "  (khong doc duoc -- xem canh bao dang nhap o tren)"
@@ -52,13 +52,13 @@ SELECT m.rolname AS vai_tro, r.rolname AS thanh_vien
 
 echo "=== 5. Thu quyen: an_$MSSV chi duoc DOC ==="
 printf "  SELECT hoadon      : "
-docker compose exec -T mysql-db mysql -u "an_$MSSV" -p"MatKhau_An_$MSSV!" "$APP_DB" \
+docker compose exec -T -e MYSQL_PWD="MatKhau_An_$MSSV!" mysql-db mysql -u "an_$MSSV" "$APP_DB" \
   -e "SELECT COUNT(*) FROM hoadon;" >/dev/null 2>&1 && echo "duoc (DUNG)" || echo "KHONG duoc (SAI)"
 printf "  DELETE hoadon      : "
-docker compose exec -T mysql-db mysql -u "an_$MSSV" -p"MatKhau_An_$MSSV!" "$APP_DB" \
+docker compose exec -T -e MYSQL_PWD="MatKhau_An_$MSSV!" mysql-db mysql -u "an_$MSSV" "$APP_DB" \
   -e "DELETE FROM hoadon WHERE id=999;" >/dev/null 2>&1 && echo "DUOC (SAI -- phai bi chan)" || echo "bi chan (DUNG)"
 printf "  SELECT * nhanvien  : "
-docker compose exec -T mysql-db mysql -u "an_$MSSV" -p"MatKhau_An_$MSSV!" "$APP_DB" \
+docker compose exec -T -e MYSQL_PWD="MatKhau_An_$MSSV!" mysql-db mysql -u "an_$MSSV" "$APP_DB" \
   -e "SELECT * FROM nhanvien;" >/dev/null 2>&1 && echo "DUOC (SAI -- cot luong phai bi chan)" || echo "bi chan (DUNG)"
 
 echo
@@ -72,11 +72,18 @@ docker compose exec -T postgres-db psql -U postgres -d "$APP_DB" -c "
 SELECT policyname, cmd, qual FROM pg_policies WHERE tablename='khachhang';"
 
 echo "--- Hai nguoi dung PHAI thay hai tap dong khac nhau ---"
+echo "    (an_$MSSV thuoc chi nhanh HN -> 3 dong; binh_$MSSV thuoc HCM -> 2 dong)"
 for u in an binh; do
-  printf "  %-6s thay %s dong: " "$u" ""
-  docker compose exec -T -e PGPASSWORD="MatKhau_$(echo ${u^})_$MSSV!" postgres-db \
-    psql -h postgres-db -U "${u}_$MSSV" -d "$APP_DB" -t -A \
-    -c "SELECT COUNT(*) FROM khachhang;" 2>/dev/null || echo "khong ket noi duoc"
+  printf "  %-6s thay: " "$u"
+  n=$(docker compose exec -T -e PGPASSWORD="MatKhau_$(echo ${u^})_$MSSV!" postgres-db \
+      psql -h postgres-db -U "${u}_$MSSV" -d "$APP_DB" -t -A \
+      -c "SELECT COUNT(*) FROM khachhang;" 2>/dev/null | tr -d "[:space:]")
+  case "$u:$n" in
+    an:3|binh:2) echo "$n dong (DUNG)" ;;
+    *:0)  echo "0 dong (SAI -- ham chi_nhanh_cua_toi() tra ve NULL?)" ;;
+    *:)   echo "khong ket noi duoc (SAI)" ;;
+    *)    echo "$n dong (SAI)" ;;
+  esac
 done
 
 echo "--- Bien phien KHONG duoc phep vuot qua chinh sach ---"

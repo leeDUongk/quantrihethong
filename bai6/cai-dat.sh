@@ -108,8 +108,8 @@ docker compose up -d
 # de nap SQL o buoc sau.
 # ---------------------------------------------------------------------
 thu_mysql() {
-  docker compose exec -T mysql-db \
-    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" </dev/null >/dev/null 2>&1
+  docker compose exec -T -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql-db \
+    mysql -uroot -e "SELECT 1;" </dev/null >/dev/null 2>&1
 }
 thu_pg() {
   docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-db \
@@ -156,8 +156,10 @@ fi
 # 7. Nap RBAC
 # ---------------------------------------------------------------------
 echo "==> Nap vai tro va tai khoan cho MySQL"
-docker compose exec -T mysql-db \
-  mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < sql/02-mysql-rbac.sql
+# MYSQL_PWD thay cho -p... de khong in canh bao "Using a password on the
+# command line interface can be insecure" o moi lenh.
+docker compose exec -T -e MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql-db \
+  mysql -uroot < sql/02-mysql-rbac.sql
 
 echo "==> Nap vai tro va tai khoan cho PostgreSQL"
 docker compose exec -T postgres-db \
