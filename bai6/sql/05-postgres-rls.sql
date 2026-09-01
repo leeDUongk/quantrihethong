@@ -33,7 +33,11 @@ ALTER TABLE khachhang ENABLE ROW LEVEL SECURITY;
 
 -- B1. Bang anh xa nguoi dung -> chi nhanh.
 --     Nguoi dung thuong KHONG doc va KHONG sua duoc bang nay.
-CREATE TABLE nv_chi_nhanh (
+-- File nay duoc viet de CHAY LAI DUOC bao nhieu lan cung ra dung ket qua:
+--   IF NOT EXISTS / ON CONFLICT / OR REPLACE / DROP ... IF EXISTS.
+-- Muc 6.6 cua tai lieu yeu cau go chinh sach dung ra de thu chinh sach sai,
+-- roi nap lai file nay de va -- nen tinh chay lai duoc la bat buoc.
+CREATE TABLE IF NOT EXISTS nv_chi_nhanh (
   db_user   name        PRIMARY KEY,
   chi_nhanh VARCHAR(10) NOT NULL
 );
@@ -41,7 +45,8 @@ CREATE TABLE nv_chi_nhanh (
 INSERT INTO nv_chi_nhanh (db_user, chi_nhanh) VALUES
   ('an_MSSV',    'HN'),
   ('binh_MSSV',  'HCM'),
-  ('cuong_MSSV', 'HN');
+  ('cuong_MSSV', 'HN')
+ON CONFLICT (db_user) DO UPDATE SET chi_nhanh = EXCLUDED.chi_nhanh;
 
 -- HAI DONG REVOKE, KHONG PHAI MOT. Day la mot cai bay that:
 -- muc 6.4 da chay
@@ -83,7 +88,9 @@ REVOKE ALL     ON FUNCTION chi_nhanh_cua_toi() FROM PUBLIC;
 GRANT  EXECUTE ON FUNCTION chi_nhanh_cua_toi() TO r_doc_MSSV;
 
 -- B3. Chinh sach dua tren HAM, khong dua tren bien phien
-DROP POLICY IF EXISTS p_sai ON khachhang;
+-- Go CA HAI chinh sach truoc khi tao lai, de file chay lai duoc.
+DROP POLICY IF EXISTS p_sai            ON khachhang;
+DROP POLICY IF EXISTS p_doc_chi_nhanh  ON khachhang;
 
 CREATE POLICY p_doc_chi_nhanh ON khachhang
   FOR SELECT
