@@ -18,10 +18,14 @@ services:
       # Script trong initdb.d CHI chay khi volume con trong.
       - ./sql/01-mysql-dulieu.sql:/docker-entrypoint-initdb.d/01.sql:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      # Dang nhap THAT bang mat khau, khong chi "ping". mysqladmin ping van
+      # bao song ca khi sai mat khau, nen healthy kieu do khong chung minh
+      # duoc gi. Cach nay khien "healthy" dong nghia voi "dang nhap duoc".
+      test: ["CMD-SHELL", 'mysql -uroot -p"$$MYSQL_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1']
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 60s
     networks:
       - db_data
 
@@ -37,10 +41,11 @@ services:
       - pg_data:/var/lib/postgresql/data
       - ./sql/03-postgres-dulieu.sql:/docker-entrypoint-initdb.d/03.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", 'pg_isready -U postgres -d "$$POSTGRES_DB" -q']
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 30s
     networks:
       - db_data
 

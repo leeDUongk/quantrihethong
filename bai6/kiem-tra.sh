@@ -5,16 +5,21 @@ set -u
 MSSV="${1:-k23}"
 cd "$(dirname "$0")"
 sed -i 's/\r$//' .env 2>/dev/null || true
-set -a; source .env 2>/dev/null; set +a
-APP_DB="${APP_DB:-app_$MSSV}"
 
-# Neu chua dang nhap duoc bang tai khoan quan tri thi moi muc sau deu bao SAI
+# Doc .env neu co; neu khong thi suy ra tu MSSV theo dung cong thuc ma
+# cai-dat.sh dung -- de kiem-tra.sh van chay duoc khi thieu .env.
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+APP_DB="${APP_DB:-app_$MSSV}"
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-RootMySQL_${MSSV}_2026}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-RootPg_${MSSV}_2026}"
+
+# Khong dang nhap duoc bang tai khoan quan tri thi moi muc sau deu bao SAI
 # ma khong phai vi phan quyen. Kiem tra truoc va noi ro.
 if ! docker compose exec -T mysql-db \
-     mysql -uroot -p"${MYSQL_ROOT_PASSWORD:-}" -e "SELECT 1;" >/dev/null 2>&1; then
+     mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" >/dev/null 2>&1; then
   echo "!! KHONG dang nhap duoc MySQL bang root voi mat khau trong .env."
   echo "!! Cac muc 3 va 5 duoi day se trong -- KHONG phai loi phan quyen."
-  echo "!! Sua bang:  ./cai-dat.sh $MSSV --lam-lai"
+  echo "!! Sua bang:  ./cai-dat.sh $MSSV"
   echo
 fi
 

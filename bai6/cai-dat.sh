@@ -1,125 +1,175 @@
 #!/usr/bin/env bash
-# Bai lab 6 -- cai dat mot mach: dung stack, cho healthy, nap RBAC.
+# =====================================================================
+# Bai lab 6 -- CAI DAT SACH, doc lap hoan toan voi cac bai lab truoc.
 #
-# Cach dung:
-#   ./cai-dat.sh k23              # cai binh thuong
-#   ./cai-dat.sh k23 --lam-lai    # XOA volume cu roi cai lai tu dau
+#   ./cai-dat.sh k23          # cai sach: xoa stack bai 6 cu roi dung lai
+#   ./cai-dat.sh k23 --giu    # giu nguyen du lieu dang co, chi nap lai RBAC
+#
+# Chay bao nhieu lan cung ra dung mot ket qua. Khong can chay don-dep.sh
+# truoc, khong dung lai bat cu thu gi cua bai lab 2, 3, 4, 5.
+# =====================================================================
 set -euo pipefail
 
-MSSV="${1:?Cach dung: ./cai-dat.sh <MSSV> [--lam-lai]   (vi du: ./cai-dat.sh k23)}"
-LAM_LAI=0
-for t in "$@"; do [ "$t" = "--lam-lai" ] && LAM_LAI=1; done
+MSSV="${1:?Cach dung: ./cai-dat.sh <MSSV>   (vi du: ./cai-dat.sh k23)}"
+case "$MSSV" in --*) echo "LOI: tham so dau tien phai la MSSV, khong phai co."; exit 1;; esac
+GIU=0
+for t in "$@"; do [ "$t" = "--giu" ] && GIU=1; done
 cd "$(dirname "$0")"
 
-# ---------- 0. Chuan hoa xuong dong ----------
-# File tai ve tu GitHub qua Windows co the mang ky tu CR o cuoi dong. Bash doc
-# CR nhu mot phan cua mat khau, Docker Compose thi khong -- lech nhau la
-# ERROR 1045. Cat bo CR truoc khi lam bat cu viec gi khac.
-sed -i 's/\r$//' .env.example .env sql/*.sql ra-soat/*.sql 2>/dev/null || true
+echo "=================================================================="
+echo " BAI LAB 6 -- CAI DAT   (MSSV = $MSSV)"
+echo "=================================================================="
 
-# ---------- 1. Chuan bi .env va thay MSSV (chi lam mot lan) ----------
-if [ ! -f .da-thay-mssv ]; then
-  [ -f .env ] || cp .env.example .env
-  sed -i "s/MSSV/$MSSV/g" .env sql/*.sql ra-soat/*.sql
-  date > .da-thay-mssv
-  echo "==> Da thay MSSV = $MSSV trong .env, sql/ va ra-soat/"
+# ---------------------------------------------------------------------
+# 1. Chuan hoa xuong dong
+# File di qua Windows co the mang ky tu CR o cuoi dong. Bash doc CR nhu
+# mot phan cua gia tri, Docker Compose thi cat bo -- hai ben lech nhau
+# mot ky tu vo hinh la du gay "Access denied". Cat sach ngay tu dau.
+# ---------------------------------------------------------------------
+find . -type f \( -name '*.sh' -o -name '*.sql' -o -name '*.yml' \
+     -o -name '*.example' -o -name '.env' \) -print0 \
+  | xargs -0 -r sed -i 's/\r$//'
+chmod +x ./*.sh backup/*.sh 2>/dev/null || true
+
+# ---------------------------------------------------------------------
+# 2. Khoi phuc file SQL ve ban goc roi moi thay MSSV
+# Nho co ban goc trong .mau/ nen chay lai voi MSSV khac van dung.
+# ---------------------------------------------------------------------
+if [ ! -d .mau ]; then
+  mkdir -p .mau/sql .mau/ra-soat
+  cp -f sql/*.sql     .mau/sql/
+  cp -f ra-soat/*.sql .mau/ra-soat/
+  echo "==> Da luu ban goc cac file SQL vao .mau/"
 else
-  echo "==> Da thay MSSV tu truoc (xoa file .da-thay-mssv neu muon lam lai)"
+  cp -f .mau/sql/*.sql     sql/
+  cp -f .mau/ra-soat/*.sql ra-soat/
+  echo "==> Da khoi phuc cac file SQL ve ban goc"
 fi
-chmod +x backup/*.sh don-dep.sh kiem-tra.sh 2>/dev/null || true
+sed -i "s/MSSV/$MSSV/g" sql/*.sql ra-soat/*.sql
+echo "==> Da thay MSSV = $MSSV trong sql/ va ra-soat/"
 
-set -a; source .env; set +a
+# ---------------------------------------------------------------------
+# 3. Mat khau -- chi ton tai o DUNG MOT CHO
+# Cac bien duoi day la nguon duy nhat. Tu chung ghi ra .env cho Docker
+# Compose, va cung chinh chung duoc truyen thang cho lenh mysql / psql.
+# Script KHONG "source .env", nen khong the co chuyen Compose va Bash
+# doc ra hai chuoi khac nhau.
+# ---------------------------------------------------------------------
+export APP_DB="app_$MSSV"
+export MYSQL_ROOT_PASSWORD="RootMySQL_${MSSV}_2026"
+export POSTGRES_PASSWORD="RootPg_${MSSV}_2026"
+export PGADMIN_EMAIL="admin@${MSSV}.lab"
+export PGADMIN_PASSWORD="PgAdmin_${MSSV}_2026"
 
-# ---------- 1b. Volume cu tu lan chay truoc ----------
-# MySQL va PostgreSQL CHI doc mat khau trong .env dung mot lan, luc thu muc du
-# lieu con trong. Neu volume da ton tai tu truoc khi thay MSSV thi mat khau
-# nam trong volume van la ban cu -> dang nhap that bai.
-if [ "$LAM_LAI" -eq 1 ]; then
-  echo "==> --lam-lai: xoa container va volume cu cua bai lab nay"
-  docker compose down -v --remove-orphans 2>/dev/null || true
+if [ "$GIU" -eq 1 ] && [ -f .env ]; then
+  echo "==> --giu: dung lai .env dang co"
+  set -a; . ./.env; set +a
+else
+  printf '%s\n' \
+    "# File nay do cai-dat.sh sinh ra. Sua tay se bi ghi de o lan chay sau." \
+    "APP_DB=$APP_DB" \
+    "MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD" \
+    "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" \
+    "PGADMIN_EMAIL=$PGADMIN_EMAIL" \
+    "PGADMIN_PASSWORD=$PGADMIN_PASSWORD" > .env
+  echo "==> Da sinh .env"
 fi
 
-# ---------- 2. Dung stack ----------
+# ---------------------------------------------------------------------
+# 4. Don rieng bai lab 6 (khong dung toi bai lab khac)
+# ---------------------------------------------------------------------
+if [ "$GIU" -eq 0 ]; then
+  echo "==> Xoa stack bai lab 6 cu (neu co) -- KHONG dung toi bai lab khac"
+  docker compose down -v --remove-orphans >/dev/null 2>&1 || true
+  for c in mysql-db postgres-db phpmyadmin pgadmin; do
+    docker rm -f "$c" >/dev/null 2>&1 && echo "    - da xoa container con sot: $c" || true
+  done
+fi
+
+for cong in 8080 8081; do
+  ai=$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep ":$cong->" | awk '{print $1}' || true)
+  if [ -n "$ai" ]; then
+    echo "LOI: cong $cong dang bi container \"$ai\" chiem."
+    echo "     Dung no roi chay lai:  docker rm -f $ai"
+    exit 1
+  fi
+done
+
+# ---------------------------------------------------------------------
+# 5. Dung stack
+# ---------------------------------------------------------------------
 echo "==> Dung stack (lan dau se tai image, mat vai phut)"
 docker compose up -d
 
-# ---------- 3. Cho ca hai DBMS san sang ----------
-echo "==> Cho MySQL va PostgreSQL bao healthy"
-ms=""; ps=""
+# ---------------------------------------------------------------------
+# 6. Cho toi khi DANG NHAP DUOC -- khong chi cho "healthy"
+# "healthy" chua du: mysqladmin ping van bao song ngay ca khi sai mat
+# khau. Phep thu dung la thu dang nhap that bang chinh mat khau se dung
+# de nap SQL o buoc sau.
+# ---------------------------------------------------------------------
+thu_mysql() {
+  docker compose exec -T mysql-db \
+    mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" </dev/null >/dev/null 2>&1
+}
+thu_pg() {
+  docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-db \
+    psql -h 127.0.0.1 -U postgres -d "$APP_DB" -c "SELECT 1;" </dev/null >/dev/null 2>&1
+}
+
+echo "==> Cho hai CSDL nhan dang nhap (toi da 5 phut)"
+ok_my=0; ok_pg=0
 for i in $(seq 1 60); do
-  ms=$(docker inspect -f '{{.State.Health.Status}}' mysql-db    2>/dev/null || echo "chua")
-  ps=$(docker inspect -f '{{.State.Health.Status}}' postgres-db 2>/dev/null || echo "chua")
-  printf "\r    mysql-db: %-10s postgres-db: %-10s (%ds)" "$ms" "$ps" "$((i*5))"
-  [ "$ms" = "healthy" ] && [ "$ps" = "healthy" ] && break
+  [ "$ok_my" -eq 0 ] && thu_mysql && ok_my=1
+  [ "$ok_pg" -eq 0 ] && thu_pg    && ok_pg=1
+  printf "\r    MySQL: %-10s PostgreSQL: %-10s (%ds)" \
+    "$([ $ok_my -eq 1 ] && echo 'dang nhap OK' || echo 'dang cho')" \
+    "$([ $ok_pg -eq 1 ] && echo 'dang nhap OK' || echo 'dang cho')" "$((i*5))"
+  [ "$ok_my" -eq 1 ] && [ "$ok_pg" -eq 1 ] && break
   sleep 5
 done
 echo
-if [ "$ms" != "healthy" ] || [ "$ps" != "healthy" ]; then
-  echo "LOI: qua 5 phut ma chua healthy. Xem log:"
-  echo "  docker compose logs mysql-db"
-  echo "  docker compose logs postgres-db"
+
+if [ "$ok_my" -eq 0 ] || [ "$ok_pg" -eq 0 ]; then
+  echo
+  echo "=================================================================="
+  echo " KHONG DANG NHAP DUOC -- thong tin de chan doan"
+  echo "=================================================================="
+  echo "-- Mat khau script dang dung:"
+  printf '   MYSQL_ROOT_PASSWORD = %q\n' "$MYSQL_ROOT_PASSWORD"
+  printf '   POSTGRES_PASSWORD   = %q\n' "$POSTGRES_PASSWORD"
+  echo "-- Mat khau ben trong container:"
+  docker inspect mysql-db    -f '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
+    | grep -E '^MYSQL_ROOT_PASSWORD=' | sed 's/^/   /' || echo "   (khong doc duoc)"
+  docker inspect postgres-db -f '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null \
+    | grep -E '^POSTGRES_PASSWORD='   | sed 's/^/   /' || echo "   (khong doc duoc)"
+  echo "-- Nhat ky 15 dong cuoi:"
+  docker compose logs --tail 15 mysql-db    2>/dev/null | sed 's/^/   /'
+  docker compose logs --tail 15 postgres-db 2>/dev/null | sed 's/^/   /'
+  echo
+  echo " Hai chuoi tren PHAI giong het nhau. Neu khac, chay lai cho sach:"
+  echo "     cd $(pwd) && docker compose down -v && ./cai-dat.sh $MSSV"
+  echo "=================================================================="
   exit 1
 fi
 
-# ---------- 3b. Thu dang nhap quan tri TRUOC khi nap SQL ----------
-# Buoc nay bat loi mat khau lech ngay tai cho, kem huong dan sua -- thay vi de
-# script chet giua chung voi mot dong ERROR 1045 kho hieu.
-loi_mat_khau() {
-  cat <<HD
-
-==================================================================
- KHONG DANG NHAP DUOC VAO $1 BANG MAT KHAU TRONG .env
-==================================================================
- Hai nguyen nhan thuong gap:
-
- 1. Volume du lieu da duoc tao TU LAN CHAY TRUOC, khi .env con mang
-    mat khau khac (vi du chua thay MSSV). He quan tri CSDL chi doc
-    mat khau mot lan duy nhat luc khoi tao thu muc du lieu, nen mat
-    khau nam trong volume van la ban cu.
-
- 2. File .env tai ve tu Windows con ky tu CR o cuoi dong.
-
- Cach sua (se XOA du lieu trong hai CSDL cua bai lab nay, dung y do
- vi ta dang cai lai tu dau):
-
-     cd $(pwd) && ./cai-dat.sh $MSSV --lam-lai
-
-==================================================================
-HD
-  exit 1
-}
-
-echo "==> Thu dang nhap quan tri"
-printf "    MySQL root      : "
-if docker compose exec -T mysql-db \
-     mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1;" >/dev/null 2>&1; then
-  echo "OK"
-else
-  echo "THAT BAI"; loi_mat_khau "MySQL"
-fi
-
-printf "    PostgreSQL admin: "
-if docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-db \
-     psql -h postgres-db -U postgres -d "$APP_DB" -c "SELECT 1;" >/dev/null 2>&1; then
-  echo "OK"
-else
-  echo "THAT BAI"; loi_mat_khau "PostgreSQL"
-fi
-
-# ---------- 4. Nap RBAC ----------
+# ---------------------------------------------------------------------
+# 7. Nap RBAC
+# ---------------------------------------------------------------------
 echo "==> Nap vai tro va tai khoan cho MySQL"
 docker compose exec -T mysql-db \
   mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < sql/02-mysql-rbac.sql
 
 echo "==> Nap vai tro va tai khoan cho PostgreSQL"
 docker compose exec -T postgres-db \
-  psql -U postgres -d "$APP_DB" -v ON_ERROR_STOP=1 < sql/04-postgres-rbac.sql
+  psql -U postgres -d "$APP_DB" -v ON_ERROR_STOP=1 -q < sql/04-postgres-rbac.sql
 
 echo "==> Bat Row Level Security"
 docker compose exec -T postgres-db \
-  psql -U postgres -d "$APP_DB" -v ON_ERROR_STOP=1 < sql/05-postgres-rls.sql
+  psql -U postgres -d "$APP_DB" -v ON_ERROR_STOP=1 -q < sql/05-postgres-rls.sql
 
-# ---------- 5. Bao cao ----------
+# ---------------------------------------------------------------------
+# 8. Bao cao
+# ---------------------------------------------------------------------
 echo
 echo "=================================================================="
 echo " CAI DAT XONG"
@@ -127,8 +177,8 @@ echo "=================================================================="
 docker compose ps
 cat <<HD
 
- phpMyAdmin : http://<IP-may-ao>:8080   (root / mat khau trong .env)
- pgAdmin    : http://<IP-may-ao>:8081   ($PGADMIN_EMAIL)
+ phpMyAdmin : http://<IP-may-ao>:8080   (root / $MYSQL_ROOT_PASSWORD)
+ pgAdmin    : http://<IP-may-ao>:8081   ($PGADMIN_EMAIL / $PGADMIN_PASSWORD)
 
  Ba tai khoan de thu quyen (mat khau xem trong sql/02-mysql-rbac.sql):
    an_$MSSV     -- vai tro r_doc         : chi doc
@@ -137,5 +187,4 @@ cat <<HD
 
  Buoc tiep theo:
    ./kiem-tra.sh $MSSV        # kiem chung toan bo
-   docker compose exec mysql-db mysql -u an_$MSSV -p $APP_DB
 HD

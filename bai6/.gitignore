@@ -1,4 +1,6 @@
 .env
+.mau/
+.da-thay-mssv
 backup/*.sql
 backup/*.dump
 *.log

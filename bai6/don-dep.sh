@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
-# Bai lab 6 -- BUOC 0: don sach may ao truoc khi cai dat.
+# =====================================================================
+# Bai lab 6 -- BUOC 0: dua Docker tren may ao ve trang thai TRONG.
 #
-# Cach dung:
-#   ./don-dep.sh            -> don rieng cac bai lab (an toan hon)
-#   ./don-dep.sh --tat-ca   -> don SACH toan bo Docker tren may ao
+#   ./don-dep.sh            # xoa moi container, volume, network (GIU image)
+#   ./don-dep.sh --tat-ca   # xoa ca image -- lan sau phai tai lai tu dau
 #   Them --dong-y de bo qua buoc hoi xac nhan.
+#
+# Bai lab 6 dung mot he thong hoan toan moi, khong dung lai gi cua bai
+# lab 2, 3, 4, 5. Don sach truoc de khong con container nao giu cong
+# 3306 / 5432 / 8080 / 8081 va khong con volume cu gay nham lan.
+# =====================================================================
 set -u
 
 TAT_CA=0
@@ -15,14 +20,19 @@ for t in "$@"; do
 done
 
 echo "=================================================================="
+echo " CANH BAO -- se xoa TOAN BO container, volume va network cua Docker"
+echo " tren may ao nay, ke ca thu khong thuoc hoc phan."
 if [ "$TAT_CA" -eq 1 ]; then
-  echo " CANH BAO: se xoa TOAN BO container, image, volume, network"
-  echo " cua Docker tren may ao nay -- ke ca thu khong thuoc bai lab."
+  echo " Che do --tat-ca: xoa CA IMAGE. Lan cai sau phai tai lai tu Internet."
 else
-  echo " Se dung va xoa container + volume CO TEN THUOC cac bai lab 2, 3, 5, 6."
-  echo " Khong dung docker prune toan cuc, nen KHONG dung toi tai nguyen khac."
-  echo " DU LIEU TRONG CAC BAI LAB DO SE MAT."
+  echo " Image duoc GIU lai de lan cai sau khong phai tai lai."
 fi
+echo
+echo " DU LIEU CUA CAC BAI LAB TRUOC SE MAT VINH VIEN:"
+echo "   - bai viet WordPress cua Bai lab 3"
+echo "   - bang du lieu cua Bai lab 2"
+echo "   - cau hinh Proxy Host va chung chi cua Bai lab 5"
+echo " Con can thi sao luu truoc, hoac dung snapshot cua VMware."
 echo " Khong the hoan tac."
 echo "=================================================================="
 
@@ -32,48 +42,47 @@ if [ "$DONG_Y" -ne 1 ]; then
 fi
 
 echo
-echo "==> 1. Dung cac stack Compose cua bai lab truoc (neu con thu muc)"
-# Ke ca chinh thu muc chua script nay -- sinh vien co the giai nen ra ten khac
-# ~/db-lab, khi do ten volume mang tien to khac va vong grep ben duoi se bo sot.
-THU_MUC_NAY="$(cd "$(dirname "$0")" && pwd)"
-for d in "$THU_MUC_NAY" ~/bai3/php-web-app ~/bai3/wordpress-lab ~/npm-lab/proxy \
-         ~/npm-lab/static-site ~/npm-lab/backend ~/db-lab ~/php-web-app; do
-  if [ -f "$d/docker-compose.yml" ]; then
-    echo "    - $d"
-    (cd "$d" && docker compose down -v --remove-orphans 2>/dev/null) || true
-  fi
-done
+echo "==> 1. Dung va xoa moi container"
+ds=$(docker ps -aq 2>/dev/null)
+if [ -n "$ds" ]; then
+  echo "$ds" | xargs -r docker rm -f >/dev/null 2>&1
+  echo "    da xoa $(echo "$ds" | wc -l) container"
+else
+  echo "    khong co container nao"
+fi
+
+echo "==> 2. Xoa moi volume"
+vs=$(docker volume ls -q 2>/dev/null)
+if [ -n "$vs" ]; then
+  echo "$vs" | xargs -r docker volume rm -f >/dev/null 2>&1
+  echo "    da xoa $(echo "$vs" | wc -l) volume"
+else
+  echo "    khong co volume nao"
+fi
+
+echo "==> 3. Xoa moi network tu tao (giu bridge / host / none cua he thong)"
+docker network prune -f >/dev/null 2>&1
+echo "    xong"
 
 if [ "$TAT_CA" -eq 1 ]; then
-  echo "==> 2. Xoa toan bo container"
-  docker ps -aq | xargs -r docker rm -f
-  echo "==> 3. Xoa toan bo volume, network, image khong dung"
-  docker system prune -af --volumes
-else
-  echo "==> 2. Xoa cac container con sot cua bai lab"
-  for c in mysql-db postgres-db phpmyadmin pgadmin wp-mysql wp-app wp-phpmyadmin \
-           wp-redis php-web redis-cache static-site nginx-proxy-manager \
-           wordpress wp-db; do
-    docker rm -f "$c" 2>/dev/null && echo "    - da xoa $c" || true
-  done
-  echo "==> 3. Xoa volume va network CUA CAC BAI LAB (theo ten, khong prune toan cuc)"
-  # Bat theo ca ten thu muc lan ten volume trong compose (mysql_data, pg_data),
-  # vi tien to volume la ten thu muc du an -- co the khong phai "db-lab".
-  for v in $(docker volume ls -q 2>/dev/null \
-             | grep -E 'bai3|wordpress|php-web|npm|db-lab|proxy|static|_mysql_data$|_pg_data$'); do
-    docker volume rm -f "$v" >/dev/null 2>&1 && echo "    - da xoa volume $v"
-  done
-  for n in npm_network php-network wp-network backend \
-           db-lab_db_data db-lab_db_admin proxy_npm_network; do
-    docker network rm "$n" >/dev/null 2>&1 && echo "    - da xoa network $n"
-  done
+  echo "==> 4. Xoa moi image"
+  docker image prune -af >/dev/null 2>&1
+  echo "    xong"
 fi
 
 echo
-echo "==> 4. Kiem tra ket qua"
-echo "--- Container dang chay ---"
-docker ps
-echo "--- Cong 80 / 3306 / 5432 / 8080 / 8081 ---"
-sudo ss -ltnp 2>/dev/null | grep -E ':80 |:3306 |:5432 |:8080 |:8081 ' || echo "  (khong cong nao dang bi chiem -- DUNG)"
+echo "==> Kiem tra ket qua"
+echo "--- Container (phai trong) ---"
+docker ps -a
+echo "--- Volume (phai trong) ---"
+docker volume ls
+echo "--- Cong 3306 / 5432 / 8080 / 8081 do Docker giu ---"
+if docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep -qE ':(3306|5432|8080|8081)->'; then
+  docker ps --format '{{.Names}} {{.Ports}}' | grep -E ':(3306|5432|8080|8081)->'
+  echo "  ^ VAN CON container giu cong -- xem lai"
+else
+  echo "  khong con container nao giu cac cong nay -- DUNG"
+fi
+
 echo
-echo "Da don xong. Chay tiep:  ./cai-dat.sh <MSSV>"
+echo "Docker da ve trang thai trong. Chay tiep:  ./cai-dat.sh <MSSV>"
