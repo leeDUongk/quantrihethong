@@ -33,18 +33,28 @@ chmod +x ./*.sh backup/*.sh 2>/dev/null || true
 
 # ---------------------------------------------------------------------
 # 2. Khoi phuc file SQL ve ban goc roi moi thay MSSV
-# Nho co ban goc trong .mau/ nen chay lai voi MSSV khac van dung.
+#
+# Ban goc nam trong .mau/. Xu ly TUNG FILE MOT, va dung chinh chuoi
+# "MSSV" lam dau nhan biet:
+#
+#   - File con chua chu MSSV  -> day la BAN GOC (vua keo ve tu git).
+#                               Cap nhat .mau/ theo no.
+#   - File khong con MSSV nhung .mau/ co  -> da bi thay o lan chay truoc.
+#                               Khoi phuc tu .mau/.
+#   - Ca hai deu khong co MSSV -> file nay khong co cho de thay. De yen.
+#
+# Nho quy tac thu nhat, sau khi "git pull" ban moi se duoc dung ngay,
+# khong bi ban cu trong .mau/ de len -- day tung la mot cai bay that.
 # ---------------------------------------------------------------------
-if [ ! -d .mau ]; then
-  mkdir -p .mau/sql .mau/ra-soat
-  cp -f sql/*.sql     .mau/sql/
-  cp -f ra-soat/*.sql .mau/ra-soat/
-  echo "==> Da luu ban goc cac file SQL vao .mau/"
-else
-  cp -f .mau/sql/*.sql     sql/
-  cp -f .mau/ra-soat/*.sql ra-soat/
-  echo "==> Da khoi phuc cac file SQL ve ban goc"
-fi
+mkdir -p .mau/sql .mau/ra-soat
+for f in sql/*.sql ra-soat/*.sql; do
+  [ -f "$f" ] || continue
+  if grep -q 'MSSV' "$f"; then
+    cp -f "$f" ".mau/$f"
+  elif [ -f ".mau/$f" ] && grep -q 'MSSV' ".mau/$f"; then
+    cp -f ".mau/$f" "$f"
+  fi
+done
 sed -i "s/MSSV/$MSSV/g" sql/*.sql ra-soat/*.sql
 echo "==> Da thay MSSV = $MSSV trong sql/ va ra-soat/"
 
@@ -113,7 +123,7 @@ thu_mysql() {
 }
 thu_pg() {
   docker compose exec -T -e PGPASSWORD="$POSTGRES_PASSWORD" postgres-db \
-    psql -h 127.0.0.1 -U postgres -d "$APP_DB" -c "SELECT 1;" </dev/null >/dev/null 2>&1
+    psql -h postgres-db -U postgres -d "$APP_DB" -c "SELECT 1;" </dev/null >/dev/null 2>&1
 }
 
 echo "==> Cho hai CSDL nhan dang nhap (toi da 5 phut)"
