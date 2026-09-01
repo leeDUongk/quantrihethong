@@ -28,6 +28,11 @@ fi
 # file dang duoc quan ly phien ban. Cach lam sach hon la sinh ra thu muc
 # rieng -- nhung o quy mo bai lab, tra-ve-ban-goc la du va de hieu hon.
 # ---------------------------------------------------------------------
+# Kho duoc day len tu Windows, noi khong co bit thuc thi. Tren Linux,
+# "chmod +x" o Khoi 1 lam git thay MOI file .sh deu "da bi sua" -- du noi
+# dung khong doi mot ky tu. Bao git bo qua bit quyen trong kho nay.
+git config core.fileMode false
+
 echo "==> Tra sql/ va ra-soat/ ve ban goc"
 git checkout -- sql ra-soat 2>/dev/null || true
 
