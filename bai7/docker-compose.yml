@@ -54,6 +54,12 @@ services:
       MYSQL_PASSWORD: ${WP_PASSWORD}
       EXPORTER_USER: ${EXPORTER_USER}
       EXPORTER_PASSWORD: ${EXPORTER_PASSWORD}
+      # Bo qua viec nap co so du lieu mui gio cua he dieu hanh vao bang
+      # mysql.time_zone*. Mac dinh MySQL 8.0 lam viec nay khi khoi tao lan
+      # dau, va tren may ao cham no ngon HAI DEN BA PHUT -- trong suot thoi
+      # gian do root chua co mat khau nen healthcheck lien tuc that bai.
+      # Bai lab khong dung ham mui gio nao, nen bo hoan toan.
+      MYSQL_INITDB_SKIP_TZINFO: "1"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./sql/01-tai-khoan-exporter.sh:/docker-entrypoint-initdb.d/01.sh:ro
@@ -64,7 +70,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 20
-      start_period: 60s
+      # start_period la khoang "an" luc dau: healthcheck van chay nhung
+      # that bai KHONG bi tinh vao so lan thu. Khoi tao MySQL lan dau tren
+      # may ao cham co the mat vai phut, nen phai rong rai o day -- neu
+      # khong, container bi ket luan la hong trong khi no van dang cai dat.
+      start_period: 300s
 
   # ===================== TANG GIAM SAT =====================
   prometheus:

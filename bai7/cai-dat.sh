@@ -144,10 +144,17 @@ echo "==> Da sinh monitoring/my.cnf cho mysql-exporter"
 # 4. Don rieng stack bai lab 7
 # ---------------------------------------------------------------------
 if [ "$GIU" -eq 0 ]; then
-  echo "==> Xoa stack bai lab 7 cu (neu co)"
+  echo "==> Don stack bai lab 7 cu (neu co)"
   docker compose down -v --remove-orphans >/dev/null 2>&1 || true
+  # CAN THAN: "docker rm -f <ten-khong-ton-tai>" tra ve MA THOAT 0 (chi in
+  # loi ra stderr). Neu chi dua vao "&& echo" thi script se bao da xoa ca
+  # bay container ngay ca khi chua he co container nao -- rat de hieu nham.
+  # Vi vay phai HOI TRUOC xem container co ton tai khong.
   for c in wordpress mysql-db prometheus grafana node-exporter cadvisor mysql-exporter; do
-    docker rm -f "$c" >/dev/null 2>&1 && echo "    - da xoa container con sot: $c" || true
+    if [ -n "$(docker ps -aq -f "name=^${c}$" 2>/dev/null)" ]; then
+      docker rm -f "$c" >/dev/null 2>&1
+      echo "    - da xoa container con sot: $c"
+    fi
   done
 fi
 
