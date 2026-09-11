@@ -71,15 +71,21 @@ docker compose exec -T grafana \
   | grep -q 'bai7-tong-quan' && echo "co (DUNG)" || echo "KHONG co (SAI)"
 
 echo
-echo "=== 7. Prometheus va Grafana KHONG duoc pho ra ngoai ==="
-for c in 9090 3000; do
-  printf "  Cong %s : " "$c"
-  if docker ps --format '{{.Ports}}' | grep -q "0.0.0.0:$c->"; then
-    echo "PHO RA 0.0.0.0 (SAI -- vi pham tieu chi Moc 7)"
-  else
-    echo "chi nghe 127.0.0.1 (DUNG)"
-  fi
-done
+echo "=== 7. Prometheus va Grafana nghe o dau ==="
+if [ "${BIND_ADDR:-127.0.0.1}" = "0.0.0.0" ]; then
+  echo "  Dang o che do --mo-lan: hai dich vu PHO RA MANG."
+  echo "  Tien cho buoi hoc, nhung VI PHAM tieu chi Moc 7 cua du an."
+  echo "  Truoc khi nop bai du an, chay lai KHONG co co --mo-lan."
+else
+  for c in 9090 3000; do
+    printf "  Cong %s : " "$c"
+    if docker ps --format '{{.Ports}}' | grep -q "0.0.0.0:$c->"; then
+      echo "PHO RA 0.0.0.0 (SAI -- vi pham tieu chi Moc 7)"
+    else
+      echo "chi nghe 127.0.0.1 (DUNG)"
+    fi
+  done
+fi
 
 echo
 echo "Xong. Doc ky cac dong (SAI) neu co."

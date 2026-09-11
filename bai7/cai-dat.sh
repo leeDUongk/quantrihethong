@@ -2,8 +2,9 @@
 # =====================================================================
 # Bai lab 7 -- CAI DAT SACH, doc lap hoan toan voi cac bai lab truoc.
 #
-#   ./cai-dat.sh k23          # cai sach: xoa stack bai 7 cu roi dung lai
-#   ./cai-dat.sh k23 --giu    # giu du lieu dang co, chi nap lai cau hinh
+#   ./cai-dat.sh k23            # cai sach: xoa stack cu roi dung lai
+#   ./cai-dat.sh k23 --giu      # giu du lieu dang co, chi nap lai cau hinh
+#   ./cai-dat.sh k23 --mo-lan   # pho Grafana/Prometheus ra mang (xem ghi chu)
 #
 # Chay bao nhieu lan cung ra dung mot ket qua.
 # =====================================================================
@@ -12,7 +13,18 @@ set -euo pipefail
 MSSV="${1:?Cach dung: ./cai-dat.sh <MSSV>   (vi du: ./cai-dat.sh k23)}"
 case "$MSSV" in --*) echo "LOI: tham so dau tien phai la MSSV, khong phai co."; exit 1;; esac
 GIU=0
-for t in "$@"; do [ "$t" = "--giu" ] && GIU=1; done
+MO_LAN=0
+for t in "$@"; do
+  [ "$t" = "--giu" ]    && GIU=1
+  [ "$t" = "--mo-lan" ] && MO_LAN=1
+done
+
+# Dia chi ma Prometheus va Grafana lang nghe.
+#   127.0.0.1  chi vao duoc TU TRONG may ao -- yeu cau cua Moc 7.
+#              Tu may that thi mo duong ham SSH.
+#   0.0.0.0    vao duoc tu may that bang http://<IP-may-ao>:3000
+#              Tien cho buoi hoc, nhung VI PHAM tieu chi Moc 7.
+if [ "$MO_LAN" -eq 1 ]; then BIND_ADDR="0.0.0.0"; else BIND_ADDR="127.0.0.1"; fi
 cd "$(dirname "$0")"
 
 echo "=================================================================="
@@ -86,6 +98,7 @@ export EXPORTER_USER="exporter_$MSSV"
 export EXPORTER_PASSWORD="Exporter_${MSSV}_2026"
 export GRAFANA_USER="admin"
 export GRAFANA_PASSWORD="Grafana_${MSSV}_2026"
+export BIND_ADDR
 
 if [ "$GIU" -eq 1 ] && [ -f .env ]; then
   echo "==> --giu: dung lai .env dang co"
@@ -101,8 +114,18 @@ else
     "EXPORTER_USER=$EXPORTER_USER" \
     "EXPORTER_PASSWORD=$EXPORTER_PASSWORD" \
     "GRAFANA_USER=$GRAFANA_USER" \
-    "GRAFANA_PASSWORD=$GRAFANA_PASSWORD" > .env
-  echo "==> Da sinh .env"
+    "GRAFANA_PASSWORD=$GRAFANA_PASSWORD" \
+    "BIND_ADDR=$BIND_ADDR" > .env
+  echo "==> Da sinh .env  (BIND_ADDR=$BIND_ADDR)"
+fi
+
+if [ "$BIND_ADDR" = "0.0.0.0" ]; then
+  echo
+  echo "!! --mo-lan: Prometheus va Grafana se PHO RA MANG, vao duoc tu may that"
+  echo "!! bang http://<IP-may-ao>:3000. Tien cho buoi hoc, nhung VI PHAM tieu"
+  echo "!! chi Moc 7 (\"Grafana chi nghe tren 127.0.0.1\"). Truoc khi nop bai du"
+  echo "!! an, chay lai KHONG co co nay."
+  echo
 fi
 
 # my.cnf cho mysql-exporter -- sinh tu cung bo bien o tren.
@@ -240,15 +263,33 @@ docker compose ps --format 'table {{.Name}}\t{{.Status}}\t{{.Ports}}'
 cat <<HD
 
  WordPress  : http://${IP:-<IP-may-ao>}:8080
+HD
 
- Prometheus va Grafana CHI nghe tren 127.0.0.1 cua may ao -- dung y
- cua Moc 7. Tu may that, mo mot duong ham SSH roi truy cap qua localhost:
+if [ "$BIND_ADDR" = "0.0.0.0" ]; then
+cat <<HD
+ Grafana    : http://${IP:-<IP-may-ao>}:3000   ($GRAFANA_USER / $GRAFANA_PASSWORD)
+ Prometheus : http://${IP:-<IP-may-ao>}:9090
 
-   ssh -L 9090:127.0.0.1:9090 -L 3000:127.0.0.1:3000 $(whoami)@${IP:-<IP-may-ao>}
+ (Dang o che do --mo-lan: vao thang tu may that bang dia chi tren.)
+HD
+else
+cat <<HD
+ Grafana va Prometheus chi nghe tren 127.0.0.1 cua may ao. Hai cach xem:
 
- rồi mở trên máy thật:
-   Prometheus : http://localhost:9090
-   Grafana    : http://localhost:3000   ($GRAFANA_USER / $GRAFANA_PASSWORD)
+ CACH 1 -- may ao co giao dien do hoa:
+   Mo trinh duyet NGAY TRONG may ao:
+     Grafana    : http://localhost:3000   ($GRAFANA_USER / $GRAFANA_PASSWORD)
+     Prometheus : http://localhost:9090
+
+ CACH 2 -- may ao chi co dong lenh: mo duong ham SSH TU MAY THAT:
+   ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 $(whoami)@${IP:-<IP-may-ao>}
+   Roi mo tren may that: http://localhost:3000
+
+ Muon vao thang bang IP tu may that thi chay lai voi co --mo-lan.
+HD
+fi
+
+cat <<HD
 
  Buoc tiep theo:
    ./kiem-tra.sh $MSSV        # kiem chung toan bo

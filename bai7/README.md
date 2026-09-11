@@ -47,23 +47,42 @@ newgrp docker            # hoac dang xuat ra vao lai
 
 ## Truy cập
 
-WordPress phơi thẳng ra ngoài:
+**Grafana ở đây đã là bản chạy cục bộ** — phần mềm mã nguồn mở, tự lưu trữ, chạy
+hoàn toàn trong máy ảo. Không gọi ra Internet, không cần tài khoản, **không cần
+tên miền và không cần chứng chỉ SSL**. (Grafana Cloud là dịch vụ trả phí của hãng,
+không liên quan.)
+
+WordPress phơi thẳng ra ngoài: `http://<IP-may-ao>:8080`
+
+Prometheus và Grafana mặc định **chỉ nghe trên `127.0.0.1`** — yêu cầu của Mốc 7.
+Ba cách mở, chọn theo máy ảo của mình:
+
+**Cách 1 — máy ảo có giao diện đồ hoạ.** Gọn nhất, không cần gì thêm. Mở trình
+duyệt ngay trong máy ảo:
 
 ```
-http://<IP-may-ao>:8080
+http://localhost:3000     Grafana
+http://localhost:9090     Prometheus
 ```
 
-Prometheus và Grafana **chỉ nghe trên `127.0.0.1`** — đây là yêu cầu của Mốc 7,
-không phải giới hạn kỹ thuật. Từ máy thật, mở một đường hầm SSH:
+**Cách 2 — máy ảo chỉ có dòng lệnh.** Mở đường hầm SSH, chạy trên máy thật:
 
 ```bash
-ssh -L 9090:127.0.0.1:9090 -L 3000:127.0.0.1:3000 <user>@<IP-may-ao>
+ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 <user>@<IP-may-ao>
 ```
 
-rồi mở trên máy thật:
+rồi mở `http://localhost:3000` trên máy thật. Đường hầm đi qua cổng 22 và dùng
+mã hoá riêng của SSH — không có TLS, không có chứng chỉ.
 
-- Prometheus — <http://localhost:9090>
-- Grafana — <http://localhost:3000>
+**Cách 3 — vào thẳng bằng IP từ máy thật.** Cài lại với cờ `--mo-lan`:
+
+```bash
+./cai-dat.sh k23 --mo-lan
+# roi mo:  http://<IP-may-ao>:3000
+```
+
+Cờ này đổi bind sang `0.0.0.0` — tiện cho buổi học, nhưng **vi phạm tiêu chí
+Mốc 7**. Trước khi nộp bài dự án, chạy lại không có cờ.
 
 Mật khẩu Grafana sinh từ mã số sinh viên, xem trong file `.env` do
 `cai-dat.sh` tạo ra.
@@ -74,6 +93,7 @@ Mật khẩu Grafana sinh từ mã số sinh viên, xem trong file `.env` do
 |---|---|
 | `./don-dep.sh` | Đưa Docker về trạng thái trống. `--tat-ca` xoá cả image |
 | `./cap-nhat.sh k23` | Kéo bản sửa mới từ GitHub, không dừng stack |
+| `./cai-dat.sh k23 --mo-lan` | Phơi Grafana và Prometheus ra mạng để vào bằng IP |
 | `./tao-tai.sh 120` | Sinh tải CPU và tải truy vấn trong 120 giây |
 
 ## Hai điểm khác với giáo trình — đọc trước khi thắc mắc
