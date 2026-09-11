@@ -13,9 +13,18 @@ docker compose ps --format 'table {{.Name}}\t{{.Status}}'
 
 echo
 echo "=== 2. Ba mang tach bach ==="
-printf "  mysql-exporter -> mysql-db  : "
-docker exec mysql-exporter getent hosts mysql-db >/dev/null 2>&1 \
-  && echo "goi duoc (DUNG -- no nam o ca hai mang)" || echo "KHONG goi duoc (SAI)"
+printf "  mysql-exporter o ca hai mang: "
+# KHONG dung "docker exec mysql-exporter getent ...": anh prom/mysqld-exporter
+# duoc dung tren nen toi gian, KHONG co getent lan ping lan shell day du, nen
+# lenh do luon that bai va bao SAI oan. Hoi thang Docker xem container dang
+# gan vao nhung mang nao moi la cach dung.
+mang=$(docker inspect mysql-exporter \
+       --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' 2>/dev/null || true)
+if echo "$mang" | grep -q "db_net_${MSSV}" && echo "$mang" | grep -q "monitor_net_${MSSV}"; then
+  echo "co (DUNG -- $mang)"
+else
+  echo "KHONG (SAI -- dang o: ${mang:-khong doc duoc})"
+fi
 printf "  prometheus     -> mysql-db  : "
 docker exec prometheus getent hosts mysql-db >/dev/null 2>&1 \
   && echo "GOI DUOC (SAI -- he giam sat khong duoc cham vao CSDL)" \
@@ -47,14 +56,24 @@ kiem "MySQL            " 'mysql_up'
 
 echo
 echo "=== 5. cAdvisor co tach duoc TUNG container khong ==="
+# Prometheus tra ve  "value":[1757581234.567,"7"]  -- gia tri la phan tu THU HAI
+# va nam TRONG dau nhay. Cat tu dau phay cuoi den het la lay dung so.
 so_ct=$(pq 'query?query=count(count%20by%20(name)%20(container_cpu_usage_seconds_total%7Bname!%3D%22%22%7D))' \
-        | grep -o '"value":\[[^]]*\]' | grep -o '"[0-9]*"$' | tr -d '"')
-echo "  So container co ten ma cAdvisor thay: ${so_ct:-0}"
-if [ "${so_ct:-0}" -ge 5 ]; then
+        | grep -o '"value":\[[^]]*\]' | head -1 | sed 's/.*,"//; s/".*//')
+case "$so_ct" in (*[!0-9]*|'') so_ct=0 ;; esac
+echo "  So container co ten ma cAdvisor thay: $so_ct"
+if [ "$so_ct" -ge 5 ]; then
   echo "  (DUNG)"
 else
-  echo "  (SAI -- gan nhu chac chan do trinh luu tru o dia khong phai overlay2)"
-  echo "         Kiem bang:  docker info --format '{{.Driver}}'"
+  echo "  (SAI) Lan theo thu tu nay, dung lai o buoc dau tien sai:"
+  echo "    1) cAdvisor co tu sinh nhan ten khong:"
+  echo "         docker exec cadvisor wget -qO- http://127.0.0.1:8080/metrics | grep -c 'name=\"'"
+  echo "       Ra 0  -> loi o cAdvisor. Thuong gap nhat: trinh luu tru o dia"
+  echo "       khong phai overlay2 (kiem: docker info --format '{{.Driver}}'),"
+  echo "       hoac thieu quyen  privileged / /var/run / /sys / /var/lib/docker."
+  echo "       Ra vai tram -> cAdvisor binh thuong, sang buoc 2."
+  echo "    2) Prometheus co thu duoc tu cAdvisor khong: mo muc 3 o tren, xem"
+  echo "       target 'cadvisor' co UP khong."
 fi
 
 echo

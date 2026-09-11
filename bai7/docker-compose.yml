@@ -152,6 +152,12 @@ services:
     image: prom/mysqld-exporter:latest
     container_name: mysql-exporter
     restart: unless-stopped
+    # Chay bang dung UID/GID cua nguoi dung tren may that (cai-dat.sh ghi hai
+    # bien nay vao .env). Ly do: file .my.cnf duoi day de che do 600 vi no chua
+    # mat khau, ma anh nay mac dinh chay duoi "nobody" (UID 65534) nen se bao
+    # "permission denied" va quay vong khoi dong lai. Chay dung UID chu so huu
+    # thi doc duoc file, ma van khong phai chay bang root.
+    user: "${HOST_UID}:${HOST_GID}"
     # TU BAN 0.15.0 (2023), bien DATA_SOURCE_NAME DA BI BO HAN.
     # Thong tin dang nhap doc tu file .my.cnf gan vao duoi day.
     command:

@@ -96,7 +96,7 @@ Mật khẩu Grafana sinh từ mã số sinh viên, xem trong file `.env` do
 | `./cai-dat.sh k23 --mo-lan` | Phơi Grafana và Prometheus ra mạng để vào bằng IP |
 | `./tao-tai.sh 120` | Sinh tải CPU và tải truy vấn trong 120 giây |
 
-## Hai điểm khác với giáo trình — đọc trước khi thắc mắc
+## Ba điểm khác với giáo trình — đọc trước khi thắc mắc
 
 **`DATA_SOURCE_NAME` không còn dùng được.** Giáo trình mô tả cách cấu hình
 `mysql-exporter` bằng biến môi trường `DATA_SOURCE_NAME`. Biến này đã bị bỏ
@@ -105,6 +105,21 @@ file đó do `cai-dat.sh` sinh ra, không commit lên Git.
 
 **cAdvisor đã đổi kho ảnh.** Từ `v0.53.0`, ảnh chuyển từ
 `gcr.io/cadvisor/cadvisor` sang `ghcr.io/google/cadvisor`.
+
+**`mysql-exporter` phải chạy đúng UID của người dùng.** File `monitoring/my.cnf`
+chứa mật khẩu nên để chế độ `600` — chỉ chủ sở hữu đọc được. Nhưng ảnh
+`prom/mysqld-exporter` mặc định chạy dưới tài khoản `nobody` (UID 65534), khác
+chủ sở hữu, nên nó báo `permission denied` và quay vòng khởi động lại mãi:
+
+```
+Error parsing host config ... open /etc/mysql/.my.cnf: permission denied
+```
+
+Cách chữa trong bài lab: `cai-dat.sh` ghi `HOST_UID`/`HOST_GID` vào `.env`, và
+`docker-compose.yml` khai `user: "${HOST_UID}:${HOST_GID}"` cho dịch vụ này.
+File vẫn `600`, exporter vẫn không phải `root`, mà vẫn đọc được file của chính nó.
+Hạ xuống `644` cũng chạy, nhưng khi đó mọi tài khoản trên máy ảo đều đọc được
+mật khẩu — đi ngược đúng cái mà Chương 7 đang dạy.
 
 ## Về phiên bản image
 

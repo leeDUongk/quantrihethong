@@ -100,9 +100,18 @@ export GRAFANA_USER="admin"
 export GRAFANA_PASSWORD="Grafana_${MSSV}_2026"
 export BIND_ADDR
 
+# UID/GID cua nguoi dang chay script. Dung cho mysql-exporter -- xem phan
+# sinh my.cnf o duoi de biet tai sao.
+export HOST_UID="$(id -u)"
+export HOST_GID="$(id -g)"
+
 if [ "$GIU" -eq 1 ] && [ -f .env ]; then
   echo "==> --giu: dung lai .env dang co"
   set -a; . ./.env; set +a
+  # .env sinh boi ban cu chua co HOST_UID/HOST_GID -- bo sung cho du,
+  # neu khong Compose se doc ra chuoi rong o muc "user:" cua mysql-exporter.
+  grep -q '^HOST_UID=' .env || printf 'HOST_UID=%s\nHOST_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+  export HOST_UID="$(id -u)" HOST_GID="$(id -g)"
 else
   printf '%s\n' \
     "# File nay do cai-dat.sh sinh ra. Sua tay se bi ghi de o lan chay sau." \
@@ -115,7 +124,9 @@ else
     "EXPORTER_PASSWORD=$EXPORTER_PASSWORD" \
     "GRAFANA_USER=$GRAFANA_USER" \
     "GRAFANA_PASSWORD=$GRAFANA_PASSWORD" \
-    "BIND_ADDR=$BIND_ADDR" > .env
+    "BIND_ADDR=$BIND_ADDR" \
+    "HOST_UID=$HOST_UID" \
+    "HOST_GID=$HOST_GID" > .env
   echo "==> Da sinh .env  (BIND_ADDR=$BIND_ADDR)"
 fi
 
@@ -137,8 +148,21 @@ printf '%s\n' \
   "password = $EXPORTER_PASSWORD" \
   "host = mysql-db" \
   "port = 3306" > monitoring/my.cnf
+# File nay chua mat khau, nen de 600: chi chu so huu doc duoc.
+#
+# Nhung o day co mot cai bay. Anh prom/mysqld-exporter chay duoi tai khoan
+# "nobody" (UID 65534). File tren may that thuoc ve NGUOI CHAY SCRIPT, che do
+# 600 -- nen tien trinh trong container KHONG doc noi:
+#     Error parsing host config ... permission denied
+# va container quay vong khoi dong lai mai.
+#
+# Co ba cach chua. Cho exporter chay bang root thi doc duoc nhung mat nguyen
+# tac dac quyen toi thieu. Ha xuong 644 thi moi tai khoan tren may ao deu doc
+# duoc mat khau. Cach chon o day: bat container chay DUNG bang UID cua nguoi
+# dung (bien HOST_UID o .env, khai o muc "user:" cua dich vu mysql-exporter).
+# File van 600, exporter van khong phai root, ma van doc duoc file cua chinh no.
 chmod 600 monitoring/my.cnf
-echo "==> Da sinh monitoring/my.cnf cho mysql-exporter"
+echo "==> Da sinh monitoring/my.cnf cho mysql-exporter (UID $HOST_UID)"
 
 # ---------------------------------------------------------------------
 # 4. Don rieng stack bai lab 7
@@ -159,12 +183,17 @@ if [ "$GIU" -eq 0 ]; then
 fi
 
 for cong in 8080 9090 3000; do
-  ai=$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep ":$cong->" | awk '{print $1}' || true)
-  if [ -n "$ai" ]; then
-    echo "LOI: cong $cong dang bi container \"$ai\" chiem."
+  for ai in $(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep ":$cong->" | awk '{print $1}'); do
+    # Container cua CHINH stack nay thi khong phai xung dot: "docker compose up -d"
+    # se tu thay the no. Truoc day cho nay bao loi voi ca container cua minh, nen
+    # "./cai-dat.sh <MSSV> --giu" luon chet ngay o buoc kiem cong khi stack dang chay.
+    # Chi bao loi khi ke dang chiem cong la nguoi ngoai du an.
+    du_an=$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$ai" 2>/dev/null || true)
+    [ "$du_an" = "bai7-lab" ] && continue
+    echo "LOI: cong $cong dang bi container \"$ai\" chiem (khong thuoc bai lab 7)."
     echo "     Dung no roi chay lai:  docker rm -f $ai"
     exit 1
-  fi
+  done
 done
 
 # ---------------------------------------------------------------------
