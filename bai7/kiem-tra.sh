@@ -35,10 +35,19 @@ docker exec mysql-db timeout 5 bash -c "cat < /dev/null > /dev/tcp/8.8.8.8/53" 2
 
 echo
 echo "=== 3. Bon target cua Prometheus ==="
-pq 'targets?state=active' \
-  | tr '}' '\n' | grep -o '"job":"[^"]*"\|"health":"[^"]*"' \
-  | paste - - 2>/dev/null | sed 's/"job":"/  /; s/"//g; s/health:/-> /' \
-  || echo "  (khong doc duoc -- Prometheus chua san sang?)"
+# Doc JSON bang python3 thay vi cat chuoi bang grep/paste. Ly do: nhan "job"
+# xuat hien NHIEU LAN trong moi target (ca o labels lan discoveredLabels), nen
+# cach ghep doi bang "paste - -" cho ra cac dong lech nhau, doc khong noi.
+pq 'targets?state=active' | python3 -c '
+import json, sys
+try:
+    ds = json.load(sys.stdin)["data"]["activeTargets"]
+except Exception:
+    print("  (khong doc duoc -- Prometheus chua san sang?)"); raise SystemExit
+for t in sorted(ds, key=lambda x: x["scrapePool"]):
+    loi = t.get("lastError", "")
+    print("  %-16s %-5s %s" % (t["scrapePool"], t["health"], loi))
+' 2>/dev/null || echo "  (khong doc duoc -- Prometheus chua san sang?)"
 so_up=$(pq 'targets?state=active' | grep -o '"health":"up"' | wc -l)
 echo "  Tong so UP: $so_up / 4"
 [ "$so_up" -ge 4 ] && echo "  (DUNG)" || echo "  (SAI -- xem lastError o Buoc 10)"
