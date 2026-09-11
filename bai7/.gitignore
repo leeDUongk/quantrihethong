@@ -1,0 +1,5 @@
+.env
+.mau/
+monitoring/my.cnf
+*.log
+# phien-ban-da-dung.txt CO commit -- day la bang chung phien ban

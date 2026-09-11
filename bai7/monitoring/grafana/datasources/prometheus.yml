@@ -1,0 +1,14 @@
+# Nguon du lieu nap tu FILE, khong bam tay tren giao dien.
+# Nho vay dung lai o may khac van ra dung ket qua -- yeu cau cua Moc 7.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prom-bai7          # dashboard tham chieu toi uid nay
+    access: proxy           # Grafana goi Prometheus tu PHIA MAY CHU,
+                            # khong bat trinh duyet cua nguoi dung goi.
+                            # Nho vay Prometheus khong can pho ra ngoai.
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false

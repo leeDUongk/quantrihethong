@@ -1,0 +1,15 @@
+# Bao Grafana quet thu muc nay va nap moi file .json thanh dashboard.
+apiVersion: 1
+
+providers:
+  - name: 'bai7'
+    orgId: 1
+    folder: 'Bai lab 7'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true      # cho sua tren giao dien de hoc,
+                              # nhung ban goc van la file trong repo
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

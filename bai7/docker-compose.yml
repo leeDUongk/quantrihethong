@@ -1,0 +1,169 @@
+# =====================================================================
+# Bai lab 7 -- Giam sat he thong voi Prometheus va Grafana
+#
+# BA NETWORK, moi cai mot ly do:
+#
+#   db_net       internal: true  -- mysql-db, wordpress, mysql-exporter
+#                KHONG co duong ra Internet. CSDL chi song trong day.
+#
+#   web_net                      -- wordpress
+#                Chi de CONG BO cong 8080 ra ngoai. Mot network
+#                "internal" khong cong bo cong duoc, nen dich vu nao
+#                can pho ra ngoai phai co them mot chan o mang thuong.
+#
+#   monitor_net                  -- prometheus, grafana, node-exporter,
+#                                   cadvisor, mysql-exporter
+#
+# mysql-exporter la container DUY NHAT nam o ca db_net lan monitor_net:
+# no noi vao MySQL qua db_net, Prometheus lay so lieu cua no qua
+# monitor_net. Nho vay Prometheus KHONG BAO GIO cham duoc vao MySQL --
+# do la toan bo muc dich cua viec tach mang o day.
+#
+# Dat ten du an co dinh, khong phu thuoc ten thu muc.
+name: bai7-lab
+
+services:
+
+  # ===================== TANG UNG DUNG =====================
+  wordpress:
+    image: wordpress:php8.3-apache
+    container_name: wordpress
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql-db:3306
+      WORDPRESS_DB_NAME: ${WP_DB}
+      WORDPRESS_DB_USER: ${WP_USER}
+      WORDPRESS_DB_PASSWORD: ${WP_PASSWORD}
+    volumes:
+      - wp_data:/var/www/html
+    networks: [db_net, web_net]
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${WP_DB}
+      MYSQL_USER: ${WP_USER}
+      MYSQL_PASSWORD: ${WP_PASSWORD}
+      EXPORTER_USER: ${EXPORTER_USER}
+      EXPORTER_PASSWORD: ${EXPORTER_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/01-tai-khoan-exporter.sh:/docker-entrypoint-initdb.d/01.sh:ro
+    networks: [db_net]
+    healthcheck:
+      # Dang nhap THAT bang mat khau, khong chi ping cho co le.
+      test: ["CMD-SHELL", 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  # ===================== TANG GIAM SAT =====================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    # Chi nghe tren loopback -- yeu cau cua Moc 7 du an cuoi hoc phan.
+    # Muon xem tu may that: ssh -L 9090:127.0.0.1:9090 <user>@<IP-may-ao>
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      # Giu 15 ngay du lieu -- ghi ro de biet cho chinh khi o dia day.
+      - '--storage.tsdb.retention.time=15d'
+    networks: [monitor_net]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Nap san nguon du lieu va dashboard TU FILE, khong bam tay tren
+      # giao dien -- co the dung lai o may khac ra dung ket qua.
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    networks: [monitor_net]
+    depends_on: [prometheus]
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    # Doc chi so cua CHINH MAY AO chu khong phai cua container: phai muon
+    # khong gian tien trinh cua host va gan toan bo he thong tep vao /host.
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+    networks: [monitor_net]
+
+  cadvisor:
+    # Tu v0.53.0 anh doi kho: gcr.io/cadvisor/cadvisor -> ghcr.io/google/cadvisor
+    image: ghcr.io/google/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - '--housekeeping_interval=10s'
+      - '--docker_only=true'
+      # Tat cac nhom chi so khong dung trong bai lab -- giam tai dang ke.
+      - '--disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,percpu,process,referenced_memory,resctrl,sched,tcp,udp'
+    networks: [monitor_net]
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql-exporter
+    restart: unless-stopped
+    # TU BAN 0.15.0 (2023), bien DATA_SOURCE_NAME DA BI BO HAN.
+    # Thong tin dang nhap doc tu file .my.cnf gan vao duoi day.
+    command:
+      - '--config.my-cnf=/etc/mysql/.my.cnf'
+    volumes:
+      - ./monitoring/my.cnf:/etc/mysql/.my.cnf:ro
+    networks: [db_net, monitor_net]     # <-- container DUY NHAT o ca hai
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+
+networks:
+  db_net:
+    name: db_net_${MSSV}
+    internal: true
+  web_net:
+    name: web_net_${MSSV}
+  monitor_net:
+    name: monitor_net_${MSSV}
+
+volumes:
+  wp_data:
+  mysql_data:
+  prometheus_data:
+  grafana_data:

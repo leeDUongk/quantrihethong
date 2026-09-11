@@ -1,0 +1,42 @@
+# =====================================================================
+# Bai lab 7 -- Cau hinh thu thap chi so
+#
+# Target ghi bang TEN SERVICE cua Docker, khong phai localhost. Trong
+# moi container, "localhost" la chinh no; ten service duoc DNS noi bo
+# cua Docker network phan giai thanh dia chi cua container kia.
+#
+# Kiem cu phap TRUOC khi khoi dong lai, tranh lam sap he giam sat vi
+# mot dau cach sai:
+#   docker compose exec prometheus promtool check config \
+#     /etc/prometheus/prometheus.yml
+# =====================================================================
+
+global:
+  # 15 giay lay so lieu mot lan. Ngan hon thi bieu do min hon nhung
+  # ton dia va CPU; dai hon thi bo sot cac dinh ngan.
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    may: 'lab-MSSV'
+
+scrape_configs:
+
+  # Prometheus tu giam sat chinh no -- de biet ban than no con song.
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  # Chi so cua MAY AO: CPU, RAM, o dia, mang.
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  # Chi so cua TUNG CONTAINER: CPU, RAM, mang, o dia theo container.
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Chi so cua MySQL: so ket noi, so truy van, bo dem, trang thai.
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysql-exporter:9104']
