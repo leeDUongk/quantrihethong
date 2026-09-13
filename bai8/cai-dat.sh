@@ -7,9 +7,12 @@
 #   ./cai-dat.sh k23 --mo-lan     # pho giao dien ra mang (xem ghi chu)
 #
 # QUAN TRONG -- KHAC BAI 7. Script nay KHONG BAO GIO xoa du lieu. Bai 7
-# co che do "cai sach" xoa het roi dung lai; bai 8 thi khong, vi Moc 7
-# cua du an doi hoi dashboard co du lieu lien tuc it nhat 24 gio. Xoa di
-# la sinh vien phai cho lai mot ngay.
+# co che do "cai sach" xoa het roi dung lai; bai 8 thi khong. Prometheus
+# khong biet gi ve qua khu truoc khi no chay, nen xoa volume la mat sach
+# so lieu da ghi -- va so lieu do khong tao lai duoc.
+#
+# Tat may ao thi KHONG mat gi: volume con nguyen, container tu chay lai
+# khi bat may. Chi co khoang trong tren bieu do dung bang luc may tat.
 #
 # Chay bao nhieu lan cung ra dung mot ket qua.
 # =====================================================================

@@ -95,18 +95,28 @@ docker compose exec -T grafana wget -qO- --header="Accept: application/json" \
   | grep -q 'bai8-log-canh-bao' && echo "co (DUNG)" || echo "KHONG (SAI)"
 
 echo
-echo "=== 8. Du lieu bai 7 con nguyen khong ==="
-# Day la phep thu quan trong nhat cua viec ke thua: neu volume bi thay
-# the, Prometheus se khong con du lieu cu va Moc 7 mat chuoi 24 gio.
+echo "=== 8. Viec nang cap co lam mat du lieu khong ==="
+# Phep thu quan trong nhat cua viec ke thua. Dong DAU tien moi la thu can
+# xem: neu Prometheus vua khoi dong lai thi Compose da TAO LAI container
+# va du lieu cu co nguy co mat. Dong thu hai chi la thong tin -- so diem
+# do it la binh thuong, vi may ao co tat di giua cac buoi hoc.
 tuoi=$(pq 'query?query=time()-process_start_time_seconds%7Bjob%3D%22prometheus%22%7D' \
        | grep -o '"value":\[[^]]*\]' | head -1 | sed 's/.*,"//; s/\..*//')
 cu=$(pq 'query?query=count_over_time(up%5B24h%5D)' \
      | grep -o '"value":\[[^]]*\]' | head -1 | sed 's/.*,"//; s/".*//')
-echo "  Prometheus chay lien tuc: ${tuoi:-?} giay"
-echo "  So diem do trong 24h    : ${cu:-?}"
-[ "${cu:-0}" -gt 100 ] 2>/dev/null \
-  && echo "  (DUNG -- du lieu cu con nguyen)" \
-  || echo "  (chua du -- binh thuong neu bai 7 vua dung xong)"
+echo "  Prometheus chay lien tuc : ${tuoi:-?} giay"
+echo "  So diem do da ghi (24h)  : ${cu:-?}"
+# Nguong 300 giay: lon hon thoi gian chay ./cai-dat.sh cua bai 8. Con nho
+# hon nghia la tien trinh Prometheus vua bi dung lai trong luc cai dat.
+if [ "${tuoi:-0}" -gt 300 ] 2>/dev/null; then
+  echo "  (DUNG -- container cu khong bi tao lai)"
+else
+  echo "  (XEM LAI -- Prometheus vua khoi dong lai. Binh thuong neu ban"
+  echo "   vua bat may ao len; DANG NGO neu may da chay san tu truoc.)"
+fi
+echo "  Ghi chu: so diem do it la binh thuong. Moc 7 cua du an can mot"
+echo "           bieu do lien tuc 24h -- de may ao chay qua MOT dem la du,"
+echo "           lam mot lan gan han nop, khong can lam bay gio."
 
 echo
 echo "=== 9. Cong nghe o dau ==="

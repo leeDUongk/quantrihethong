@@ -19,9 +19,13 @@ Ba dịch vụ mới đặt lên trên hệ thống giám sát đã có.
 | Alerting rule | — | **mới**: `monitoring/rules/alerts.yml` |
 | Gửi cảnh báo | — | **mới**: Alertmanager + bộ nhận nội bộ |
 
-Lý do giữ nguyên dữ liệu: **Mốc 7 của dự án đòi dashboard có dữ liệu liên tục ít
-nhất 24 giờ.** Xoá stack là mất chuỗi đó và phải chờ lại một ngày. Vì vậy
-`cai-dat.sh` của bài 8 **không có** chế độ "cài sạch" như bài 7.
+Lý do giữ nguyên dữ liệu: Prometheus không biết gì về quá khứ trước khi nó chạy,
+nên xoá volume là mất sạch số liệu đã ghi — và số liệu đó không tạo lại được. Vì
+vậy `cai-dat.sh` của bài 8 **không có** chế độ "cài sạch" như bài 7.
+
+**Tắt máy ảo thì không mất gì** — volume còn nguyên, các container tự chạy lại
+khi bật máy. Chỉ có khoảng trống trên biểu đồ đúng bằng lúc máy tắt, và điều đó
+không cản trở bài lab 8. **Bài 8 chạy được cả khi chưa có dữ liệu cũ nào.**
 
 Kỹ thuật giữ được dữ liệu: `docker-compose.yml` của bài 8 khai **cùng
 `name: bai7-lab`** và **cùng tên volume** với bài 7. Compose nhận ra bảy
@@ -40,29 +44,42 @@ Bảy dịch vụ cũ của bài 7, cộng bốn dịch vụ mới:
 
 ## Cài đặt
 
+Đã làm xong bài 7 và đã tắt máy. Bật máy ảo lên rồi chạy **bốn lệnh** này:
+
 ```bash
-# 0. Lay ma nguon bai 8 (mot lan)
-git clone --depth 1 https://github.com/leeDUongk/quantrihethong.git ~/kho-qths
-git -C ~/kho-qths config core.fileMode false
-ln -s ~/kho-qths/bai8 ~/canh-bao
+# 1. KEO MA NGUON BAI 8 TU GITHUB VE.
+#    bai8/ nam trong CUNG MOT kho voi bai7/. Kho da co tai ~/kho-qths tu
+#    bai 7, nhung luc do chua co bai8/ nen phai keo ban moi.
+#    cap-nhat.sh goi "git pull" ben trong, va tra monitoring/ ve ban goc
+#    truoc khi keo de tranh xung dot voi cho da thay MSSV.
+cd ~/giam-sat && ./cap-nhat.sh k23
+
+# 2. Tao duong tat ~/canh-bao tro vao bai8 (giong ~/giam-sat cua bai 7)
+[ -e ~/canh-bao ] || ln -s ~/kho-qths/bai8 ~/canh-bao
+
+# 3. Vao thu muc lam viec va cap quyen chay
 cd ~/canh-bao && chmod +x *.sh
 
-# 1. Cai dat -- thay k23 bang ma so sinh vien
+# 4. Dung them bon dich vu moi -- thay k23 bang ma so sinh vien
 ./cai-dat.sh k23
+```
 
-# 2. Kiem chung
+Rồi kiểm chứng và gây sự cố thật để cảnh báo kêu:
+
+```bash
 ./kiem-tra.sh k23
-
-# 3. Gay su co that de canh bao keu
 ./tao-loi.sh dung-exporter
 ```
 
-Nếu đã clone ở bài 7 thì bỏ qua bước `git clone`, chỉ cần:
+**Không cần** chạy lại `cai-dat-docker.sh` hay `cai-dat.sh` của bài 7. Bảy
+container cũ tự chạy lại khi máy ảo khởi động, nhờ `restart: unless-stopped`.
+
+**Nếu máy ảo chưa từng `git clone`** (làm bài 7 bằng cách chép file) thì thay
+lệnh 1 bằng:
 
 ```bash
-git -C ~/kho-qths pull
-ln -s ~/kho-qths/bai8 ~/canh-bao
-cd ~/canh-bao && chmod +x *.sh && ./cai-dat.sh k23
+git clone --depth 1 https://github.com/leeDUongk/quantrihethong.git ~/kho-qths
+git -C ~/kho-qths config core.fileMode false
 ```
 
 ## Truy cập
