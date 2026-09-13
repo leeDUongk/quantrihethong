@@ -286,4 +286,4 @@ fi
 echo
 echo " Buoc tiep theo:"
 echo "   ./kiem-tra.sh $MSSV          # kiem chung toan bo"
-echo "   ./tao-loi.sh dung-wordpress  # gay su co that de canh bao keu"
+echo "   ./tao-loi.sh dung-exporter   # gay su co that de canh bao keu"

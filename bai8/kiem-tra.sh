@@ -36,9 +36,17 @@ echo "  Tong so UP: $so_up / 6"
 
 echo
 echo "=== 3. Loki co nhan duoc log khong ==="
-printf "  Loki san sang        : "
-lq 'ready' | grep -q 'ready' && echo "co (DUNG)" || echo "CHUA (SAI -- docker compose logs loki)"
-ct=$(lq 'loki/api/v1/label/container/values' | grep -o '"[a-z0-9-]\+"' | tr -d '"' | grep -v '^values$\|^status$\|^success$' | sort -u)
+# KHONG dung /ready de ket luan. Diem cuoi do tra ve 503 trong vai truong
+# hop binh thuong (vanh dang on dinh lai sau khi khoi dong), va busybox wget
+# voi co -q khong in gi khi gap ma loi -- nhin ra thi tuong Loki chet trong
+# khi no dang phuc vu truy van binh thuong. Hoi thang mot truy van that.
+printf "  Loki tra loi truy van: "
+lq 'loki/api/v1/labels' | grep -q '"status":"success"' \
+  && echo "co (DUNG)" \
+  || echo "KHONG (SAI -- docker compose logs loki)"
+# Loc ca chu "data": JSON tra ve la {"status":"success","data":[...]}, nen
+# ba tu khoa cua chinh cai vo JSON deu lot vao neu khong loai ra.
+ct=$(lq 'loki/api/v1/label/container/values' | grep -o '"[a-z0-9-]\+"' | tr -d '"' | grep -v '^values$\|^status$\|^success$\|^data$' | sort -u)
 n_ct=$(echo "$ct" | grep -c . || true)
 echo "  So container co log  : $n_ct"
 echo "$ct" | sed 's/^/      - /'
