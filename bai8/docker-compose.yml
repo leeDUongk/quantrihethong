@@ -151,10 +151,9 @@ services:
     image: grafana/loki:latest
     container_name: loki
     restart: unless-stopped
-    # Chi nghe tren 127.0.0.1 nhu Prometheus va Grafana. Giao trinh viet
-    # "3100:3100" -- pho thang ra mang, nguoc voi nguyen tac da dat o
-    # Moc 7. Grafana goi Loki qua mang noi bo nen khong can pho ra ngoai;
-    # cong nay chi de sinh vien tu kiem bang curl.
+    # Chi nghe tren 127.0.0.1, giong Prometheus va Grafana o bai 7 -- do la
+    # yeu cau cua Moc 7. Grafana goi Loki qua mang noi bo nen Loki khong can
+    # pho ra ngoai; cong nay chi de sinh vien tu kiem bang curl trong may ao.
     ports:
       - "${BIND_ADDR}:3100:3100"
     volumes:

@@ -83,38 +83,24 @@ ssh -L 3000:127.0.0.1:3000 -L 9090:127.0.0.1:9090 \
     -L 9093:127.0.0.1:9093 -L 5001:127.0.0.1:5001 <user>@<IP-may-ao>
 ```
 
-## Bốn lỗi trong mã của giáo trình — đã sửa
+## Ghi chú kỹ thuật
 
-Mã alert rule in trong giáo trình có bốn chỗ không chạy đúng. Bản gốc để ở
-`monitoring/rules/00-vi-du-sai.yml.mau` (đuôi `.mau` nên Prometheus không nạp)
-để đối chiếu ở Bước 8.
+**Alert rule.** Xem `monitoring/rules/alerts.yml` — tám rule, mỗi rule có chú
+thích vì sao chọn biểu thức và ngưỡng đó. Kiểm cú pháp trước khi nạp lại:
 
-**1. Sai tên nhãn.** Giáo trình dùng `container="wordpress"`; cAdvisor gắn nhãn
-**`name`**, không phải `container`. Biểu thức không khớp chuỗi nào, rule nằm im
-vĩnh viễn, và **Prometheus không báo lỗi** — hệ cảnh báo trông như đang chạy tốt.
+```bash
+docker compose exec -T prometheus promtool check rules /etc/prometheus/rules/alerts.yml
+docker compose exec -T prometheus wget -q --post-data="" -O- http://localhost:9090/-/reload
+```
 
-**2. Chia cho không.** `container_spec_memory_limit_bytes` bằng **0** khi
-container không đặt giới hạn RAM — đúng trường hợp bài lab. Trong Prometheus, số
-dương chia 0 ra `+Inf`, mà `+Inf > 85` là **đúng**. Cảnh báo kêu ngay từ giây đầu
-và kêu mãi. Còn tệ hơn là không kêu.
+**Loki 3.x.** Cấu hình dùng `tsdb` + schema `v13`. Hai dòng dễ bỏ sót:
+`limits_config.allow_structured_metadata: true` (bắt buộc với `v13`) và
+`compactor.delete_request_store: filesystem` — thiếu dòng sau thì
+`retention_period` được nhận nhưng **không bao giờ xoá** dữ liệu cũ.
 
-**3. Chỉ số không tồn tại.** `mysql_global_status_errors_total` không có trong
-mysqld_exporter. Cái gần nhất và có thật là
-`mysql_global_status_connection_errors_total`.
-
-**4. Ngưỡng tuyệt đối.** `threads_connected > 80` chỉ đúng khi `max_connections`
-bằng mặc định 151. Đổi sang phần trăm thì rule còn đúng cả khi người quản trị
-chỉnh `max_connections`.
-
-## Hai điểm khác nữa so với giáo trình
-
-**Loki 3.x dùng `tsdb` + schema `v13`.** Giáo trình viết `boltdb-shipper` + `v12`
-— giá trị của Loki 2.x, nay đã lỗi thời và sẽ bị bỏ.
-
-**Cảnh báo demo bằng webhook nội bộ, không phải Gmail.** Gmail đòi App Password
-và cổng 587 thường bị chặn trong mạng trường — sinh viên cấu hình đúng hết mà
-không bao giờ nhận được mail. Bộ nhận ở `bao-dong/nhan-canh-bao.py` chạy 100%
-offline. Muốn thêm Telegram thì `./cai-dat.sh <MSSV> --telegram`.
+**Kênh gửi cảnh báo.** Mặc định là webhook nội bộ tới `bao-dong` — chạy hoàn
+toàn offline, không cần tài khoản nào. Thêm Telegram thì
+`./cai-dat.sh <MSSV> --telegram`.
 
 ## Các script
 

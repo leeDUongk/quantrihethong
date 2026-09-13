@@ -2,7 +2,7 @@
 # =====================================================================
 # Bai lab 8 -- Bo nhan canh bao noi bo
 #
-# VI SAO CAN CAI NAY. Giao trinh huong dan gui canh bao qua Gmail. Trong
+# VI SAO CAN CAI NAY. Kenh gui canh bao pho bien nhat la email. Trong
 # phong may cua truong, cach do gan nhu chac chan that bai: Gmail doi
 # "App Password" (ma tai khoan phai bat xac thuc hai buoc moi tao duoc),
 # va cong 587 di ra ngoai thuong bi chan. Sinh vien se cau hinh dung het

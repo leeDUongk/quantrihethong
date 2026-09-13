@@ -14,10 +14,10 @@ datasources:
     editable: false
 
   # ===== MOI O BAI 8 =====
-  # Giao trinh huong dan them Loki BANG TAY tren giao dien: Configuration
-  # -> Data Sources -> Add -> Loki. Lam vay thi nguon du lieu song trong
-  # CSDL noi bo cua Grafana, xoa volume la mat, va dung lai o may khac
-  # phai bam lai tu dau. Nap tu file thi no la mot dong trong Git.
+  # Loki cung nap TU FILE, khong them bang tay tren giao dien. Them bang tay
+  # thi nguon du lieu song trong CSDL noi bo cua Grafana: xoa volume la mat,
+  # va dung lai o may khac phai bam lai tu dau. Nap tu file thi no la mot
+  # dong trong Git -- dung lai o dau cung ra ket qua giong het.
   - name: Loki
     type: loki
     uid: loki-bai8

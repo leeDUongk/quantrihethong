@@ -1,7 +1,7 @@
 # =====================================================================
 # Bai lab 8 -- Cau hinh Loki
 #
-# KHAC GIAO TRINH O MOT CHO QUAN TRONG. Giao trinh viet:
+# LUU Y VE PHIEN BAN. Nhieu tai lieu tren mang con huong dan dung
 #     store: boltdb-shipper
 #     schema: v12
 # Hai gia tri nay dung cho Loki 2.x. Tu Loki 3.0 (2024), kho luu tru mac
@@ -41,9 +41,9 @@ common:
 schema_config:
   configs:
     - from: "2024-01-01"
-      store: tsdb                 # giao trinh: boltdb-shipper (Loki 2.x)
+      store: tsdb                 # Loki 2.x dung boltdb-shipper
       object_store: filesystem
-      schema: v13                 # giao trinh: v12 (Loki 2.x)
+      schema: v13                 # Loki 2.x dung v12
       index:
         prefix: index_
         period: 24h

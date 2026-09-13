@@ -1,9 +1,10 @@
 # =====================================================================
 # Bai lab 8 -- Alerting rules
 #
-# BAN NAY DA SUA BON LOI CUA MA TRONG GIAO TRINH. Ban goc de o file
-# "00-vi-du-sai.yml.mau" cung thu muc -- mo ra doi chieu o Buoc 8. File
-# do co duoi ".mau" nen Prometheus KHONG nap (no chi nap "*.yml").
+# Moi rule deu co chu thich vi sao chon bieu thuc va nguong do. Bon cho
+# danh dau "CAI BAY" la nhung loi thuong gap khi viet alert rule: chung
+# KHONG lam Prometheus bao loi, nen neu khong biet truoc thi rat kho
+# nhan ra. Buoc 8 cua tai lieu huong dan tu kiem tung cai.
 #
 # Kiem cu phap:
 #   docker compose exec prometheus promtool check rules \
@@ -33,12 +34,13 @@ groups:
 - name: container
   rules:
 
-  # ===== LOI 1 CUA GIAO TRINH: SAI TEN NHAN =====
-  # Giao trinh viet:  container_cpu_usage_seconds_total{container="wordpress"}
-  # cAdvisor KHONG gan nhan "container". No gan nhan "name". Bieu thuc
-  # theo giao trinh khong khop chuoi nao ca, va Prometheus KHONG bao loi
-  # -- rule cu nam im, mai mai khong keu. Day la kieu hong nguy hiem:
-  # he canh bao trong nhu dang chay tot.
+  # ===== CAI BAY 1: SAI TEN NHAN =====
+  # cAdvisor gan nhan "name", KHONG phai "container". Viet nham thanh
+  #   container_cpu_usage_seconds_total{container="wordpress"}
+  # thi bieu thuc khong khop chuoi nao ca, va Prometheus KHONG bao loi --
+  # voi no, "bieu thuc tra ve rong" la ket qua hoan toan hop le. Rule cu
+  # nam im mai mai, o giao dien Alerts hien INACTIVE mau xanh, trong y
+  # het mot rule khoe manh dang canh gac.
   - alert: ContainerCPUCao
     expr: sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[2m])) * 100 > 70
     for: 2m
@@ -48,17 +50,19 @@ groups:
       summary: "Container {{ $labels.name }} dang an CPU"
       description: "CPU cua {{ $labels.name }} vuot 70% lien tuc hai phut (hien tai {{ $value | printf \"%.1f\" }}%)."
 
-  # ===== LOI 2 CUA GIAO TRINH: CHIA CHO KHONG =====
-  # Giao trinh viet:
+  # ===== CAI BAY 2: CHIA CHO KHONG =====
+  # Mot cach viet thuong gap la so muc dung RAM voi GIOI HAN cua container:
   #   container_memory_usage_bytes{...} / container_spec_memory_limit_bytes{...} * 100 > 85
   # container_spec_memory_limit_bytes bang 0 khi container KHONG dat gioi
-  # han RAM -- dung truong hop cua bai lab. Trong Prometheus, mot so
-  # duong chia cho 0 ra +Inf, va "+Inf > 85" la DUNG. Ket qua: canh bao
-  # keu ngay tu giay dau tien va keu mai mai. Con te hon la khong keu.
+  # han RAM -- dung truong hop cua bai lab. Trong Prometheus, mot so duong
+  # chia cho 0 ra +Inf, va "+Inf > 85" la DUNG. Ket qua: canh bao keu ngay
+  # tu giay dau tien va keu mai mai. Con te hon la khong keu, vi sau vai
+  # ngay ai cung quen mat va bo qua no.
   #
-  # Cach sua: so voi RAM THAT cua may ao thay vi so voi mot gioi han
-  # khong ton tai. scalar() bien chuoi mot phan tu thanh mot so, nho vay
-  # phep chia giu nguyen nhan "name" cua ve trai.
+  # Cach viet o day: so voi RAM THAT cua may ao thay vi so voi mot gioi
+  # han khong ton tai. scalar() bien chuoi mot phan tu thanh mot so, nho
+  # vay phep chia giu nguyen nhan "name" cua ve trai -- neu chia hai
+  # vector cho nhau, Prometheus ghep theo nhan va ket qua se la RONG.
   - alert: ContainerAnNhieuRAM
     expr: sum by (name) (container_memory_working_set_bytes{name!=""}) / scalar(node_memory_MemTotal_bytes) * 100 > 20
     for: 3m
@@ -72,11 +76,13 @@ groups:
 - name: mysql
   rules:
 
-  # ===== LOI 3 CUA GIAO TRINH: CHI SO KHONG TON TAI =====
-  # Giao trinh viet:  rate(mysql_global_status_errors_total[5m]) > 5
-  # mysqld_exporter khong co chi so ten nhu vay. Kiem bang:
+  # ===== CAI BAY 3: CHI SO KHONG TON TAI =====
+  # De viet nham thanh mysql_global_status_errors_total -- mot cai ten
+  # nghe rat hop ly nhung mysqld_exporter KHONG he co. Prometheus khong
+  # bao gio bao "chi so nay khong ton tai": voi no, mot chi so chua tung
+  # xuat hien va mot chi so hien khong co du lieu la cung mot thu.
+  # Luon kiem ten truoc khi viet rule:
   #   curl -s localhost:9090/api/v1/label/__name__/values | grep mysql_global_status_conn
-  # Cai gan nhat va co that la mysql_global_status_connection_errors_total.
   - alert: MySQLNhieuLoiKetNoi
     expr: rate(mysql_global_status_connection_errors_total[5m]) > 1
     for: 2m
@@ -86,10 +92,12 @@ groups:
       summary: "MySQL dang tu choi ket noi"
       description: "Hon mot loi ket noi moi giay trong hai phut -- kiem mat khau ung dung hoac so ket noi toi da."
 
-  # So tuyet doi "> 80" cua giao trinh chi dung khi max_connections dung
-  # bang mac dinh 151. Doi sang PHAN TRAM thi rule con dung ca khi nguoi
-  # quan tri chinh max_connections -- va no tu noi len y nghia: "dang
-  # dung bao nhieu phan tram tran".
+  # ===== CAI BAY 4: NGUONG TUYET DOI =====
+  # Viet "threads_connected > 80" chi dung khi max_connections dung bang
+  # mac dinh 151. Hom nao nguoi quan tri nang no len 500 thi rule do thanh
+  # bao dong gia thuong truc. Nguong theo PHAN TRAM con dung trong moi
+  # truong hop, va no tu noi len y nghia: "dang dung bao nhieu phan tram
+  # tran" -- doc la hieu, khong phai nho tran bang bao nhieu.
   - alert: MySQLSapCanKetNoi
     expr: mysql_global_status_threads_connected / mysql_global_variables_max_connections * 100 > 60
     for: 1m
