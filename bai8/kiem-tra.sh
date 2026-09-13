@@ -7,7 +7,10 @@ cd "$(dirname "$0")"
 [ -f .env ] && { set -a; . ./.env; set +a; }
 
 pq()  { docker compose exec -T prometheus   wget -qO- "http://localhost:9090/api/v1/$1" 2>/dev/null; }
-lq()  { docker compose exec -T loki         wget -qO- "http://localhost:3100/$1"        2>/dev/null; }
+# Hoi Loki TU TRONG container Prometheus. Anh grafana/loki dung tren nen toi
+# gian, KHONG co wget lan curl, nen "docker compose exec loki wget ..." luon
+# that bai va tra ve chuoi loi thay vi JSON. Hai dich vu cung o monitor_net.
+lq()  { docker compose exec -T prometheus   wget -qO- "http://loki:3100/$1"           2>/dev/null || true; }
 amq() { docker compose exec -T alertmanager wget -qO- "http://localhost:9093/api/v2/$1" 2>/dev/null; }
 
 echo "=== 1. Muoi mot container phai deu dang chay ==="
@@ -96,27 +99,39 @@ docker compose exec -T grafana wget -qO- --header="Accept: application/json" \
 
 echo
 echo "=== 8. Viec nang cap co lam mat du lieu khong ==="
-# Phep thu quan trong nhat cua viec ke thua. Dong DAU tien moi la thu can
-# xem: neu Prometheus vua khoi dong lai thi Compose da TAO LAI container
-# va du lieu cu co nguy co mat. Dong thu hai chi la thong tin -- so diem
-# do it la binh thuong, vi may ao co tat di giua cac buoi hoc.
-tuoi=$(pq 'query?query=time()-process_start_time_seconds%7Bjob%3D%22prometheus%22%7D' \
-       | grep -o '"value":\[[^]]*\]' | head -1 | sed 's/.*,"//; s/\..*//')
-cu=$(pq 'query?query=count_over_time(up%5B24h%5D)' \
-     | grep -o '"value":\[[^]]*\]' | head -1 | sed 's/.*,"//; s/".*//')
-echo "  Prometheus chay lien tuc : ${tuoi:-?} giay"
-echo "  So diem do da ghi (24h)  : ${cu:-?}"
-# Nguong 300 giay: lon hon thoi gian chay ./cai-dat.sh cua bai 8. Con nho
-# hon nghia la tien trinh Prometheus vua bi dung lai trong luc cai dat.
-if [ "${tuoi:-0}" -gt 300 ] 2>/dev/null; then
-  echo "  (DUNG -- container cu khong bi tao lai)"
-else
-  echo "  (XEM LAI -- Prometheus vua khoi dong lai. Binh thuong neu ban"
-  echo "   vua bat may ao len; DANG NGO neu may da chay san tu truoc.)"
-fi
-echo "  Ghi chu: so diem do it la binh thuong. Moc 7 cua du an can mot"
-echo "           bieu do lien tuc 24h -- de may ao chay qua MOT dem la du,"
-echo "           lam mot lan gan han nop, khong can lam bay gio."
+# CACH KIEM DUNG la nhin VOLUME, khong phai nhin container.
+#
+# Bai 8 doi dinh nghia cua dich vu prometheus (gan them thu muc rules/ va
+# them co --web.enable-lifecycle), nen Compose BUOC PHAI tao lai container
+# do -- va grafana, mysql-db, mysql-exporter khoi dong lai theo vi chung
+# phu thuoc no. Chuyen do la BINH THUONG va khong lam mat gi ca.
+#
+# Du lieu nam trong VOLUME CO TEN. Tao lai container khong dung den volume.
+# Volume nao duoc tao MOI trong vai phut vua roi thi moi la dang lo.
+bay_gio=$(date +%s)
+moi_tao=0
+for v in wp_data mysql_data prometheus_data grafana_data; do
+  luc=$(docker volume inspect "bai7-lab_$v" --format '{{.CreatedAt}}' 2>/dev/null || true)
+  if [ -z "$luc" ]; then
+    printf "  %-18s : KHONG TON TAI (SAI)\n" "$v"; moi_tao=$((moi_tao+1)); continue
+  fi
+  gay=$(date -d "$luc" +%s 2>/dev/null || echo 0)
+  tuoi=$(( bay_gio - gay ))
+  if [ "$tuoi" -lt 600 ]; then
+    printf "  %-18s : VUA TAO %d giay truoc (SAI -- du lieu cu da mat)\n" "$v" "$tuoi"
+    moi_tao=$((moi_tao+1))
+  else
+    printf "  %-18s : co tu %s (dung lai, DUNG)\n" "$v" "${luc%%T*}"
+  fi
+done
+[ "$moi_tao" -eq 0 ] \
+  && echo "  (DUNG -- bon volume cu deu duoc dung lai nguyen ven)" \
+  || echo "  (SAI -- co volume bi tao moi, du lieu bai 7 da mat)"
+
+echo "  Ghi chu: container prometheus/grafana/mysql-db CO bi tao lai --"
+echo "           dung nhu thiet ke, vi bai 8 doi dinh nghia cua prometheus."
+echo "           Container tao lai KHONG lam mat du lieu; volume moi la noi"
+echo "           giu du lieu, va bon volume tren khong he bi dung toi."
 
 echo
 echo "=== 9. Cong nghe o dau ==="

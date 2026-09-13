@@ -223,11 +223,19 @@ docker compose exec -T prometheus \
 # 9. Cho Loki nhan duoc dong log dau tien
 # ---------------------------------------------------------------------
 echo "==> Cho Loki nhan log (toi da 2 phut)"
+# HOI LOKI TU TRONG CONTAINER PROMETHEUS, khong phai tu chinh container Loki.
+# Anh grafana/loki duoc dung tren nen toi gian: KHONG co wget, khong co curl,
+# khong co shell day du. "docker compose exec loki wget ..." luon that bai.
+# Prometheus va Loki cung nam o monitor_net nen goi bang ten dich vu duoc.
+#
+# Va phai co "|| true": script chay voi "set -euo pipefail", nen mot duong
+# ong that bai trong $( ) se lam CA SCRIPT THOAT ngay tai day, im lang,
+# khong in them dong nao. Luc Loki chua san sang thi dung la no that bai.
 ok=0
 for i in $(seq 1 24); do
-  n=$(docker compose exec -T loki wget -qO- \
-        'http://localhost:3100/loki/api/v1/label/container/values' 2>/dev/null \
-      | grep -o '"[a-z-]*"' | wc -l)
+  n=$( { docker compose exec -T prometheus wget -qO- \
+           'http://loki:3100/loki/api/v1/label/container/values' 2>/dev/null \
+         | grep -o '"[a-z0-9-]\+"' | grep -cv '^"\(status\|success\|values\)"$' ; } || true )
   printf "\r    So container da co log trong Loki: %s  (%ds)" "${n:-0}" "$((i*5))"
   if [ "${n:-0}" -ge 3 ]; then ok=1; break; fi
   sleep 5
