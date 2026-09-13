@@ -1,0 +1,8 @@
+.env
+.mau/
+monitoring/my.cnf
+monitoring/my.cnf.that
+monitoring/alertmanager.yml
+*.log
+# phien-ban-da-dung-bai8.txt CO commit -- day la bang chung phien ban
+__pycache__/

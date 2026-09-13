@@ -1,0 +1,314 @@
+{
+  "uid": "bai7-tong-quan",
+  "title": "Bai lab 7 — Tong quan he thong",
+  "description": "Bon bieu do bat buoc cua Moc 7: CPU may chu, RAM may chu, CPU tung container, dung luong dia con trong. Hai bieu do MySQL o cuoi la phan mo rong.",
+  "tags": ["bai-lab-7", "ictu"],
+  "timezone": "browser",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "panels": [
+    {
+      "type": "row",
+      "title": "May chu (node-exporter)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "CPU may chu — phan tram dang dung",
+      "description": "100 tru phan tram thoi gian CPU o trang thai idle. Day la cach duy nhat dung: node_exporter khong bao 'CPU dang dung bao nhieu', no dem SO GIAY CPU o tung trang thai.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "fillOpacity": 12, "lineWidth": 2, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "CPU dang dung"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "RAM may chu — phan tram dang dung",
+      "description": "Dung MemAvailable chu KHONG dung MemFree. MemFree khong tinh phan RAM Linux muon lam bo dem dia — phan do doi lai duoc ngay khi ung dung can. Nhin MemFree se tuong may sap het RAM trong khi thuc te van con nhieu.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "fillOpacity": 12, "lineWidth": 2, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 80 },
+              { "color": "red", "value": 92 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
+          "legendFormat": "RAM dang dung"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Dung luong dia con trong",
+      "description": "Loc bo cac he thong tep ao (tmpfs, overlay, squashfs) — chung khong phai dia that va se lam bieu do vo nghia.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 20 },
+              { "color": "green", "value": 35 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "100 * node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|fuse.*\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|fuse.*\"}",
+          "legendFormat": "{{mountpoint}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "RAM va dia — so hien tai",
+      "description": "Bang so tuc thoi, doc nhanh hon bieu do khi chi can biet 'bay gio the nao'.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "horizontal",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "node_memory_MemTotal_bytes",
+          "legendFormat": "Tong RAM",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "node_memory_MemAvailable_bytes",
+          "legendFormat": "RAM con dung duoc",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "sum(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|ramfs|fuse.*\"})",
+          "legendFormat": "Dia con trong",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Container (cAdvisor)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "CPU tung container",
+      "description": "Loc name!=\"\" de bo cgroup goc — neu khong, mot duong tong se de bep moi duong con lai. Day cung la bieu do dung de chung minh dinh CPU khi sinh tai gia.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 18 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": { "fillOpacity": 8, "lineWidth": 2, "showPoints": "never" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[2m])) * 100",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "RAM tung container",
+      "description": "container_memory_working_set_bytes la con so sat nhat voi 'RAM that su dang dung' — day cung la con so ma Docker dung de quyet dinh OOM kill.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 18 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "custom": { "fillOpacity": 8, "lineWidth": 2, "showPoints": "never" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "showLegend": true, "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "sum by (name) (container_memory_working_set_bytes{name!=\"\"})",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "MySQL (mysql-exporter)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "So ket noi dang mo toi MySQL",
+      "description": "So sanh Threads_connected voi max_connections. Cham tran la ung dung bat dau bao 'Too many connections' — thuong xay ra truoc khi CPU hay RAM co dau hieu gi.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "mysql_global_status_threads_connected",
+          "legendFormat": "Dang ket noi"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "mysql_global_variables_max_connections",
+          "legendFormat": "Gioi han"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "So truy van moi giay",
+      "description": "rate() bien bo dem cong don thanh toc do. Nhin thang mysql_global_status_queries chi thay mot duong di len mai — vo dung.",
+      "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "single", "sort": "none" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prom-bai7" },
+          "expr": "rate(mysql_global_status_queries[2m])",
+          "legendFormat": "Truy van/giay"
+        }
+      ]
+    }
+  ]
+}

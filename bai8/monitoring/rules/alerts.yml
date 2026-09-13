@@ -1,0 +1,133 @@
+# =====================================================================
+# Bai lab 8 -- Alerting rules
+#
+# BAN NAY DA SUA BON LOI CUA MA TRONG GIAO TRINH. Ban goc de o file
+# "00-vi-du-sai.yml.mau" cung thu muc -- mo ra doi chieu o Buoc 8. File
+# do co duoi ".mau" nen Prometheus KHONG nap (no chi nap "*.yml").
+#
+# Kiem cu phap:
+#   docker compose exec prometheus promtool check rules \
+#     /etc/prometheus/rules/alerts.yml
+# =====================================================================
+
+groups:
+
+# ---------------------------------------------------------------------
+- name: dich-vu
+  rules:
+
+  # Chi so "up" do CHINH Prometheus sinh ra cho moi target: 1 la lay so
+  # lieu duoc, 0 la khong. Day la canh bao quan trong nhat cua ca he
+  # thong, va cung la cai de kiem chung nhat -- dung mot container la no
+  # keu sau mot phut.
+  - alert: DichVuChet
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Dich vu {{ $labels.job }} khong tra loi"
+      description: "Prometheus khong lay duoc so lieu tu {{ $labels.instance }} (job {{ $labels.job }}) trong hon mot phut."
+
+# ---------------------------------------------------------------------
+- name: container
+  rules:
+
+  # ===== LOI 1 CUA GIAO TRINH: SAI TEN NHAN =====
+  # Giao trinh viet:  container_cpu_usage_seconds_total{container="wordpress"}
+  # cAdvisor KHONG gan nhan "container". No gan nhan "name". Bieu thuc
+  # theo giao trinh khong khop chuoi nao ca, va Prometheus KHONG bao loi
+  # -- rule cu nam im, mai mai khong keu. Day la kieu hong nguy hiem:
+  # he canh bao trong nhu dang chay tot.
+  - alert: ContainerCPUCao
+    expr: sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[2m])) * 100 > 70
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container {{ $labels.name }} dang an CPU"
+      description: "CPU cua {{ $labels.name }} vuot 70% lien tuc hai phut (hien tai {{ $value | printf \"%.1f\" }}%)."
+
+  # ===== LOI 2 CUA GIAO TRINH: CHIA CHO KHONG =====
+  # Giao trinh viet:
+  #   container_memory_usage_bytes{...} / container_spec_memory_limit_bytes{...} * 100 > 85
+  # container_spec_memory_limit_bytes bang 0 khi container KHONG dat gioi
+  # han RAM -- dung truong hop cua bai lab. Trong Prometheus, mot so
+  # duong chia cho 0 ra +Inf, va "+Inf > 85" la DUNG. Ket qua: canh bao
+  # keu ngay tu giay dau tien va keu mai mai. Con te hon la khong keu.
+  #
+  # Cach sua: so voi RAM THAT cua may ao thay vi so voi mot gioi han
+  # khong ton tai. scalar() bien chuoi mot phan tu thanh mot so, nho vay
+  # phep chia giu nguyen nhan "name" cua ve trai.
+  - alert: ContainerAnNhieuRAM
+    expr: sum by (name) (container_memory_working_set_bytes{name!=""}) / scalar(node_memory_MemTotal_bytes) * 100 > 20
+    for: 3m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Container {{ $labels.name }} chiem nhieu RAM may"
+      description: "{{ $labels.name }} dang giu hon 20% RAM cua may ao ({{ $value | printf \"%.1f\" }}%)."
+
+# ---------------------------------------------------------------------
+- name: mysql
+  rules:
+
+  # ===== LOI 3 CUA GIAO TRINH: CHI SO KHONG TON TAI =====
+  # Giao trinh viet:  rate(mysql_global_status_errors_total[5m]) > 5
+  # mysqld_exporter khong co chi so ten nhu vay. Kiem bang:
+  #   curl -s localhost:9090/api/v1/label/__name__/values | grep mysql_global_status_conn
+  # Cai gan nhat va co that la mysql_global_status_connection_errors_total.
+  - alert: MySQLNhieuLoiKetNoi
+    expr: rate(mysql_global_status_connection_errors_total[5m]) > 1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "MySQL dang tu choi ket noi"
+      description: "Hon mot loi ket noi moi giay trong hai phut -- kiem mat khau ung dung hoac so ket noi toi da."
+
+  # So tuyet doi "> 80" cua giao trinh chi dung khi max_connections dung
+  # bang mac dinh 151. Doi sang PHAN TRAM thi rule con dung ca khi nguoi
+  # quan tri chinh max_connections -- va no tu noi len y nghia: "dang
+  # dung bao nhieu phan tram tran".
+  - alert: MySQLSapCanKetNoi
+    expr: mysql_global_status_threads_connected / mysql_global_variables_max_connections * 100 > 60
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "MySQL sap can so ket noi cho phep"
+      description: "Da dung {{ $value | printf \"%.0f\" }}% so ket noi toi da. Cham tran la ung dung bao 'Too many connections'."
+
+  # mysql_up = 0 nghia la exporter con song va van tra loi Prometheus,
+  # nhung KHONG dang nhap duoc vao MySQL. Khac han voi DichVuChet o tren.
+  - alert: MySQLKhongDangNhapDuoc
+    expr: mysql_up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Exporter khong vao duoc MySQL"
+      description: "Exporter song nhung mu: sai mat khau, tai khoan bi khoa, hoac MySQL tu choi ket noi."
+
+# ---------------------------------------------------------------------
+- name: may-chu
+  rules:
+
+  - alert: DiaSapDay
+    expr: 100 * node_filesystem_avail_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs|fuse.*"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay|squashfs|ramfs|fuse.*"} < 15
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "O dia {{ $labels.mountpoint }} con duoi 15%"
+      description: "Con {{ $value | printf \"%.1f\" }}% dung luong. Prometheus va Loki deu ghi lien tuc, het dia la ca hai cung chet."
+
+  - alert: RAMMayChuCao
+    expr: 100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 90
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: "May ao sap het RAM"
+      description: "Da dung {{ $value | printf \"%.0f\" }}% RAM trong nam phut."

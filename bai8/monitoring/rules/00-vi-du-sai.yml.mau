@@ -1,0 +1,53 @@
+# =====================================================================
+# BAN CHEP NGUYEN VAN MA ALERT RULE TRONG GIAO TRINH CHUONG 8.
+#
+# File nay co duoi ".mau" nen Prometheus KHONG nap no (rule_files chi
+# quet "*.yml"). Muc dich duy nhat: de sinh vien doi chieu o Buoc 8 va
+# TU TIM ra ba cho sai, thay vi duoc doc ket luan san.
+#
+# DUNG doi ten thanh .yml roi de day. Neu muon thu, xem huong dan o
+# Buoc 8 cua tai liệu: bat len, quan sat, roi TAT DI.
+# =====================================================================
+
+groups:
+- name: wordpress-mysql-alerts
+  rules:
+
+  - alert: WordPressHighCPU
+    expr: rate(container_cpu_usage_seconds_total{container="wordpress"}[5m]) * 100 > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "WordPress CPU cao"
+      description: "CPU usage cua WordPress > 80% trong 2 phut"
+
+  - alert: WordPressHighMemory
+    expr: container_memory_usage_bytes{container="wordpress"} / container_spec_memory_limit_bytes{container="wordpress"} * 100 > 85
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "WordPress Memory cao"
+
+  - alert: MySQLTooManyConnections
+    expr: mysql_global_status_threads_connected > 80
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "MySQL co qua nhieu ket noi"
+
+  - alert: MySQLErrorRateHigh
+    expr: rate(mysql_global_status_errors_total[5m]) > 5
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "MySQL co nhieu loi"
+
+  - alert: HighDiskUsage
+    expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+    for: 5m
+    labels:
+      severity: warning

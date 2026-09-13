@@ -1,0 +1,75 @@
+# =====================================================================
+# Bai lab 8 -- Cau hinh Alertmanager
+#
+# File nay do cai-dat.sh sinh ra tu alertmanager.mau.yml. Sua truc tiep
+# vao day se bi ghi de o lan chay sau -- sua vao file .mau.
+#
+# BON CO CHE CHONG "MET VI CANH BAO" deu nam trong file nay:
+#   group_by        gom nhieu canh bao cung loai thanh MOT thong bao
+#   group_wait      doi mot chut cho cac canh bao anh em keu cung
+#   repeat_interval bao lau moi nhac lai neu su co chua duoc xu ly
+#   inhibit_rules   co canh bao nghiem trong roi thi im cac canh bao nhe
+# =====================================================================
+
+global:
+  # Bao lau khong thay Prometheus nhac lai thi coi la su co da het.
+  resolve_timeout: 5m
+
+route:
+  # Gom theo TEN canh bao va TEN dich vu. Dung mot container keo theo ba
+  # bon rule cung keu; gom lai thi nguoi truc nhan MOT thong bao thay vi
+  # bon cai roi rac.
+  group_by: ['alertname', 'job']
+
+  # Canh bao dau tien cua mot nhom moi: doi 30 giay xem co canh bao anh
+  # em nao keu theo khong roi hay gui. Danh doi 30 giay cham tre de lay
+  # mot thong bao day du thay vi ba thong bao vun vat.
+  group_wait: 30s
+
+  # Trong mot nhom da gui, co canh bao MOI thi doi 5 phut moi gui tiep.
+  group_interval: 5m
+
+  # Su co van con nguyen: 4 gio nhac lai mot lan. Dat ngan qua (vi du 5
+  # phut) la cach nhanh nhat de ca doi tat thong bao.
+  repeat_interval: 4h
+
+  receiver: 'noi-bo'
+
+  routes:
+    # Canh bao critical di rieng: nhac lai day hon. Day la cho de mo
+    # rong -- o he thong that, nhanh nay tro toi kenh truc dem con
+    # warning chi vao email hang ngay.
+    - matchers:
+        - severity = "critical"
+      receiver: 'noi-bo'
+      repeat_interval: 1h
+
+receivers:
+  - name: 'noi-bo'
+    webhook_configs:
+      - url: 'http://bao-dong:5001/'
+        # Gui ca thong bao "da het su co", khong chi luc bat dau. Thieu
+        # cai nay thi trang bao dong chi toan mau do va khong bao gio
+        # biet su co da duoc xu ly.
+        send_resolved: true
+
+    # ===== TUY CHON: gui them ve Telegram =====
+    # Bat bang:  ./cai-dat.sh <MSSV> --telegram
+    # Khi do cai-dat.sh se bo dau # cua bon dong duoi va dien token that
+    # tu file .env. Xem Buoc 11 cua tai lieu de biet cach lay token.
+    #TELEGRAM#telegram_configs:
+    #TELEGRAM#  - bot_token: 'THAY_BOT_TOKEN'
+    #TELEGRAM#    chat_id: THAY_CHAT_ID
+    #TELEGRAM#    parse_mode: ''
+    #TELEGRAM#    send_resolved: true
+
+inhibit_rules:
+  # Dang co canh bao critical cua mot dich vu thi dep cac canh bao
+  # warning CUNG TEN cua dich vu do. Vi du: MySQL chet han (critical) thi
+  # khong can bao them "MySQL sap can ket noi" (warning) -- no la he qua,
+  # khong phai nguyen nhan.
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ['alertname', 'job']

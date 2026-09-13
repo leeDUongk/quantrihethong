@@ -1,0 +1,236 @@
+# =====================================================================
+# Bai lab 8 -- Quan ly log tap trung va canh bao su co
+#
+# KE THUA BAI LAB 7. Bay dich vu dau tien giong het bai 7, va du an van
+# giu nguyen ten "bai7-lab" cung ten volume -- nho vay lenh
+# "docker compose up -d" chay tu thu muc nay TIEP QUAN dung cac container
+# va volume dang chay, KHONG dung lai tu dau va KHONG mat chuoi du lieu
+# 24 gio ma Moc 7 doi hoi.
+#
+# BA dich vu moi cua chuong 8:
+#   loki          Kho log tap trung. Chi lap chi muc NHAN, khong lap chi
+#                 muc noi dung -- day la ly do no nhe hon ELK rat nhieu.
+#   promtail      Agent doc log cua moi container qua Docker socket roi
+#                 day ve Loki.
+#   alertmanager  Nhan alert tu Prometheus, gom nhom, khu trung lap, roi
+#                 gui di.
+#   bao-dong      Bo nhan canh bao noi bo. Hoan toan offline, khong can
+#                 tai khoan Gmail hay Telegram de nghiem thu duoc bai.
+#
+# Dat ten du an co dinh, KHONG doi -- xem ghi chu o tren.
+name: bai7-lab
+
+services:
+
+  # ===================== TANG UNG DUNG (giu nguyen tu bai 7) ==========
+  wordpress:
+    image: wordpress:php8.3-apache
+    container_name: wordpress
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql-db:3306
+      WORDPRESS_DB_NAME: ${WP_DB}
+      WORDPRESS_DB_USER: ${WP_USER}
+      WORDPRESS_DB_PASSWORD: ${WP_PASSWORD}
+    volumes:
+      - wp_data:/var/www/html
+    networks: [db_net, web_net]
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${WP_DB}
+      MYSQL_USER: ${WP_USER}
+      MYSQL_PASSWORD: ${WP_PASSWORD}
+      EXPORTER_USER: ${EXPORTER_USER}
+      EXPORTER_PASSWORD: ${EXPORTER_PASSWORD}
+      MYSQL_INITDB_SKIP_TZINFO: "1"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/01-tai-khoan-exporter.sh:/docker-entrypoint-initdb.d/01.sh:ro
+    networks: [db_net]
+    healthcheck:
+      test: ["CMD-SHELL", 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT 1" >/dev/null 2>&1']
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 300s
+
+  # ===================== TANG GIAM SAT (giu nguyen tu bai 7) ==========
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDR}:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # MOI O BAI 8: thu muc chua alerting rule.
+      - ./monitoring/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      # Bat API cau hinh lai -- de nap lai rule bang mot cu HTTP POST,
+      # khong phai khoi dong lai ca Prometheus (mat du lieu dang cho ghi).
+      - '--web.enable-lifecycle'
+    networks: [monitor_net]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDR}:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    networks: [monitor_net]
+    depends_on: [prometheus]
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    command:
+      - '--path.rootfs=/host'
+    networks: [monitor_net]
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - '--housekeeping_interval=10s'
+      - '--docker_only=true'
+      - '--disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,percpu,process,referenced_memory,resctrl,sched,tcp,udp'
+    networks: [monitor_net]
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysql-exporter
+    restart: unless-stopped
+    user: "${HOST_UID}:${HOST_GID}"
+    command:
+      - '--config.my-cnf=/etc/mysql/.my.cnf'
+    volumes:
+      - ./monitoring/my.cnf:/etc/mysql/.my.cnf:ro
+    networks: [db_net, monitor_net]
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+
+  # ===================== TANG LOG (MOI O BAI 8) ======================
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    # Chi nghe tren 127.0.0.1 nhu Prometheus va Grafana. Giao trinh viet
+    # "3100:3100" -- pho thang ra mang, nguoc voi nguyen tac da dat o
+    # Moc 7. Grafana goi Loki qua mang noi bo nen khong can pho ra ngoai;
+    # cong nay chi de sinh vien tu kiem bang curl.
+    ports:
+      - "${BIND_ADDR}:3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    # Anh grafana/loki chay duoi UID 10001 ("loki"). Volume do Docker tao
+    # thuoc ve root, nen tien trinh khong ghi duoc vao /loki neu khong
+    # chinh quyen. Chay bang root cho tang luu tru cuc bo cua bai lab.
+    user: "0:0"
+    networks: [monitor_net]
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      # Docker socket: de Promtail TU PHAT HIEN moi container dang chay,
+      # khong phai liet ke tay tung cai.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - promtail_data:/tmp
+    command: -config.file=/etc/promtail/config.yml
+    # Doc Docker socket doi hoi quyen; anh promtail chay duoi UID 10001.
+    user: "0:0"
+    networks: [monitor_net]
+    depends_on: [loki]
+
+  # ===================== TANG CANH BAO (MOI O BAI 8) =================
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDR}:9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/config.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+    networks: [monitor_net]
+    depends_on: [prometheus]
+
+  bao-dong:
+    # Bo nhan canh bao noi bo. Dung anh Python CHINH THUC, khong phu
+    # thuoc bat cu anh ben thu ba nao -- de bai lab con cai duoc sau
+    # nhieu nam. Ma nguon nam o ./bao-dong/, doc duoc, sua duoc.
+    image: python:3.12-alpine
+    container_name: bao-dong
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDR}:5001:5001"
+    volumes:
+      - ./bao-dong:/app:ro
+    working_dir: /app
+    command: ["python", "-u", "nhan-canh-bao.py"]
+    networks: [monitor_net]
+
+networks:
+  db_net:
+    name: db_net_${MSSV}
+    internal: true
+  web_net:
+    name: web_net_${MSSV}
+  monitor_net:
+    name: monitor_net_${MSSV}
+
+volumes:
+  # BON volume dau giu NGUYEN TEN cua bai 7 -- day la ly do stack tiep
+  # quan duoc du lieu cu thay vi bat dau lai tu con so khong.
+  wp_data:
+  mysql_data:
+  prometheus_data:
+  grafana_data:
+  # Ba volume moi cua bai 8.
+  loki_data:
+  promtail_data:
+  alertmanager_data:

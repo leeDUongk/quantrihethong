@@ -1,0 +1,527 @@
+{
+  "uid": "bai8-log-canh-bao",
+  "title": "Bai lab 8 — Log va canh bao",
+  "tags": [
+    "bai-lab-8",
+    "loki",
+    "alertmanager"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "editable": true,
+  "panels": [
+    {
+      "type": "row",
+      "title": "Canh bao (Prometheus + Alertmanager)",
+      "id": 1,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "So canh bao dang keu",
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-bai7"
+      },
+      "description": "ALERTS la chi so do CHINH Prometheus sinh ra cho moi rule dang khop. 'or vector(0)' de khi khong co canh bao nao thi o nay hien so 0 chu khong phai 'No data' -- hai trang thai rat khac nhau nhung nhin giong nhau.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom-bai7"
+          },
+          "expr": "sum(ALERTS{alertstate=\"firing\"}) or vector(0)",
+          "legendFormat": "dang keu"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Canh bao nghiem trong",
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-bai7"
+      },
+      "description": "Rieng muc critical. Mot he thong khoe la o nay bang 0.",
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom-bai7"
+          },
+          "expr": "sum(ALERTS{alertstate=\"firing\", severity=\"critical\"}) or vector(0)",
+          "legendFormat": "critical"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Canh bao theo thoi gian",
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-bai7"
+      },
+      "description": "Moi duong la mot rule. Doan duong nho len la khoang thoi gian rule do khop dieu kien. Doi chieu voi bieu do CPU/RAM ben duoi de xem canh bao co keu dung luc he thong that su co van de khong.",
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom-bai7"
+          },
+          "expr": "sum by (alertname) (ALERTS{alertstate=\"firing\"})",
+          "legendFormat": "{{alertname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Log tap trung (Loki)",
+      "id": 5,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "So dong log moi giay theo container",
+      "id": 6,
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-bai8"
+      },
+      "description": "Dem so DONG log, khong phai noi dung. Mot container dot nhien tang vot so dong log gan nhu luon la dau hieu su co -- thay duoc truoc ca khi CPU hay RAM nhuc nhich.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki-bai8"
+          },
+          "expr": "sum by (container) (rate({moi_truong=\"bai-lab\"}[2m]))",
+          "legendFormat": "{{container}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "logs",
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "So dong log CO TU 'error' moi giay",
+      "id": 7,
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-bai8"
+      },
+      "description": "|~ la toan tu loc theo bieu thuc chinh quy cua LogQL. (?i) nghia la khong phan biet hoa thuong. Day la bieu do dang nhin nhat khi dang xu ly su co: no chi ra container nao dang keu cuu.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki-bai8"
+          },
+          "expr": "sum by (container) (rate({moi_truong=\"bai-lab\"} |~ \"(?i)error|fatal|critical\" [2m]))",
+          "legendFormat": "{{container}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "logs",
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "logs",
+      "title": "Log WordPress va MySQL -- moi nhat truoc",
+      "id": 8,
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-bai8"
+      },
+      "description": "Bam vao mot dong de xem het nhan cua no. Doi khung thoi gian o goc phai tren de xem log dung luc xay ra dinh CPU.",
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki-bai8"
+          },
+          "expr": "{container=~\"wordpress|mysql-db\"}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "type": "logs",
+      "title": "Canh bao da gui (log cua bo nhan canh bao)",
+      "id": 9,
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-bai8"
+      },
+      "description": "Bo nhan canh bao in moi canh bao ra dong ra chuan, Promtail day vao Loki. Nho vay lich su canh bao tra cuu duoc bang LogQL cung khung thoi gian voi bieu do chi so -- khong phai mo mot cong cu khac.",
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "loki-bai8"
+          },
+          "expr": "{container=\"bao-dong\"} |= \"ALERT\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "type": "row",
+      "title": "He thong (nhac lai tu bai 7 -- de doi chieu voi log)",
+      "id": 10,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU tung container",
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-bai7"
+      },
+      "description": "Giong bai 7. De ngay duoi log de so hai thu cung mot khung thoi gian: day la toan bo y nghia cua viec ghep Metrics voi Logs.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom-bai7"
+          },
+          "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name!=\"\"}[2m])) * 100",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "So ket noi toi MySQL",
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prom-bai7"
+      },
+      "description": "Doi chieu voi log cua mysql-db: khi so ket noi cham tran, log se bat dau co dong 'Too many connections'.",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prom-bai7"
+          },
+          "expr": "mysql_global_status_threads_connected",
+          "legendFormat": "dang ket noi"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 12,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    }
+  ]
+}
