@@ -105,10 +105,19 @@ HD
   log-loi)
     SO="${2:-30}"
     echo "[$(gio)] Bom $SO dong log co chu ERROR vao container wordpress."
+    # GHI VAO /proc/1/fd/1 -- stdout cua TIEN TRINH SO 1 trong container.
+    #
+    # Day la cho rat de sai. Docker CHI ghi lai stdout/stderr cua tien trinh
+    # so 1; "docker exec" tao mot tien trinh MOI ben canh, va chu no in ra di
+    # thang ve cua so dong lenh cua ban roi mat -- khong bao gio vao
+    # "docker logs", nen Promtail cung khong thay, nen Loki cung khong co.
+    # Ghi vao /proc/1/fd/1 la day dong chu vao dung cai ong ma Docker dang
+    # nghe, y het nhu chinh ung dung tu in ra.
     docker compose exec -T wordpress sh -c \
       "i=1; while [ \$i -le $SO ]; do \
-         echo \"[\$(date '+%Y-%m-%d %H:%M:%S')] ERROR gia lap so \$i -- bai lab 8\" >&2; \
-         i=\$((i+1)); sleep 1; done" 2>/dev/null &
+         echo \"[\$(date '+%Y-%m-%d %H:%M:%S')] ERROR gia lap so \$i -- bai lab 8\" \
+           > /proc/1/fd/1; \
+         i=\$((i+1)); sleep 1; done" >/dev/null 2>&1 &
     cat <<'HD'
 ------------------------------------------------------------------
  Sau khoang 30 giay, mo Grafana -> "Bai lab 8 — Log va canh bao":
@@ -129,9 +138,14 @@ HD
     docker compose start wordpress mysql-exporter >/dev/null 2>&1 || true
     docker compose up -d >/dev/null
     echo
-    echo " Doi khoang 1-2 phut roi kiem:"
-    echo "   - http://localhost:9090 -> Alerts : moi rule ve INACTIVE"
-    echo "   - http://localhost:5001            : co dong mau xanh 'resolved'"
+    echo " HAI MOC THOI GIAN KHAC NHAU -- dung sot ruot:"
+    echo "   sau ~30 giay : http://localhost:9090 -> Alerts ve INACTIVE ngay."
+    echo "                  Prometheus khong co do tre nao."
+    echo "   sau ~5 PHUT  : http://localhost:5001 moi hien dong mau xanh"
+    echo "                  'resolved'. Alertmanager da gui thong bao cho"
+    echo "                  nhom nay luc su co bat dau, va 'group_interval:"
+    echo "                  5m' bat moi thay doi tiep theo cua CUNG NHOM do"
+    echo "                  phai doi het chu ky 5 phut -- ke ca tin da het."
     echo
     echo " Dong 'resolved' la bang chung Alertmanager theo doi ca luc su co"
     echo " KET THUC, khong chi luc no bat dau. Thieu send_resolved: true thi"
